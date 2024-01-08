@@ -1,0 +1,31 @@
+{
+	"files.autoSave": "afterDelay",
+	"editor.formatOnSave": true,
+	"editor.formatOnPaste": true,
+
+	// ref: https://biomejs.dev/reference/vscode/
+	"editor.codeActionsOnSave": {
+		// cspell:ignore quickfix
+		"quickfix.biome": "explicit",
+		"source.organizeImports.biome": "explicit"
+	},
+	"biome.rename": true,
+	// ref: https://biomejs.dev/internals/language-support/
+	"[javascript][typescript][javascriptreact][typescriptreact][json][jsonc]": {
+		"editor.defaultFormatter": "biomejs.biome"
+	},
+
+	"[toml]": {
+		// cspell:ignore tamasfe
+		"editor.defaultFormatter": "tamasfe.even-better-toml"
+	},
+
+	"files.associations": {
+		"*ignore-sync": "ini"
+	},
+
+	// disable to use type definitions in node_modules
+	"typescript.disableAutomaticTypeAcquisition": true,
+
+	"editor.defaultColorDecorators": true
+}
