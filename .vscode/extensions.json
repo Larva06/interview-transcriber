@@ -2,7 +2,9 @@
 	"recommendations": [
 		"oven.bun-vscode",
 		"biomejs.biome",
+		"github.vscode-github-actions",
 		// cspell:ignore tamasfe
-		"tamasfe.even-better-toml" // for bunfig.toml
+		"tamasfe.even-better-toml", // for bunfig.toml
+		"streetsidesoftware.code-spell-checker"
 	]
 }
