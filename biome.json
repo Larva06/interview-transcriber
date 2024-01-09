@@ -13,7 +13,10 @@
 	},
 	"linter": {
 		"rules": {
-			"all": true
+			"all": true,
+			"nursery": {
+				"noNodejsModules": "off"
+			}
 		}
 	},
 	"json": {
