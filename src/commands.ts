@@ -16,6 +16,8 @@ import {
 	SlashCommandBuilder,
 	type UserContextMenuCommandInteraction,
 } from "discord.js";
+import { extractFileId } from "./gdrive";
+import { transcribe } from "./transcribe";
 
 type ExecutableCommand =
 	| {
@@ -63,7 +65,25 @@ const commands: ExecutableCommand[] = [
 			)
 			.toJSON(),
 		execute: async (interaction) => {
-			await interaction.reply("NOT IMPLEMENTED YET");
+			const videoFileId = extractFileId(
+				interaction.options.getString("video_url", true) ?? "",
+			);
+			if (!videoFileId) {
+				await interaction.reply({
+					content: "Invalid video URL.",
+					ephemeral: true,
+				});
+				return;
+			}
+
+			interaction.deferReply();
+			try {
+				await transcribe(videoFileId);
+				interaction.editReply("Transcription completed. (THE CAKE IS A LIE)");
+			} catch (error) {
+				await interaction.editReply("Failed to transcribe.");
+				console.error(error);
+			}
 		},
 	},
 ];

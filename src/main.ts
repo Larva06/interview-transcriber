@@ -2,7 +2,7 @@ import { promisify } from "node:util";
 import { env } from "bun";
 import { consola } from "consola";
 import { ActivityType, Client, Events } from "discord.js";
-import ffmpeg from "fluent-ffmpeg";
+import Ffmpeg from "fluent-ffmpeg";
 import { geminiClient, openaiClient } from "./ai";
 import { commandsListener, registerCommands } from "./commands";
 import { driveClient } from "./gdrive";
@@ -32,7 +32,7 @@ if (missingEnv.length) {
 // test if the client is working with valid credentials to fail fast
 
 consola.start("Checking ffmpeg installation...");
-await promisify(ffmpeg.getAvailableFormats)();
+await promisify(Ffmpeg.getAvailableFormats)();
 consola.ready("ffmpeg is installed!");
 
 consola.start("Initializing OpenAI API client...");
