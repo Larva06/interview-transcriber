@@ -43,10 +43,20 @@ export const splitAudio = async (
 	sourcePath: string,
 	maxFileSize: number,
 ): Promise<AudioSegment[]> =>
-	promisify<string, Ffmpeg.FfprobeData>(Ffmpeg.ffprobe)(sourcePath)
-		.then(({ format: { duration, size } }) => {
+	promisify<string, Ffmpeg.FfprobeData>(Ffmpeg.ffprobe)(sourcePath).then(
+		({ format: { duration, size } }) => {
 			if (!(duration && size)) {
 				throw new Error("Failed to get file metadata from ffprobe.");
+			}
+
+			if (size <= maxFileSize) {
+				return [
+					{
+						path: sourcePath,
+						startTime: 0,
+						endTime: duration,
+					},
+				];
 			}
 
 			const dir = dirname(sourcePath);
@@ -66,18 +76,18 @@ export const splitAudio = async (
 						resolve(listFilePath);
 					})
 					.on("error", reject);
+			}).then(async (listFilePath) => {
+				const csv = await file(listFilePath).text();
+				return (parse(csv) as string[][]).map((row) => {
+					if (!(row[0] && row[1] && row[2])) {
+						throw new Error("Failed to parse CSV file.");
+					}
+					return {
+						path: join(dirname(listFilePath), row[0]),
+						startTime: Number(row[1]),
+						endTime: Number(row[2]),
+					};
+				});
 			});
-		})
-		.then(async (listFilePath) => {
-			const csv = await file(listFilePath).text();
-			return (parse(csv) as string[][]).map((row) => {
-				if (!(row[0] && row[1] && row[2])) {
-					throw new Error("Failed to parse CSV file.");
-				}
-				return {
-					path: join(dirname(listFilePath), row[0]),
-					startTime: Number(row[1]),
-					endTime: Number(row[2]),
-				};
-			});
-		});
+		},
+	);
