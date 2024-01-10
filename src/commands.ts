@@ -1,5 +1,5 @@
 import { env } from "bun";
-import { consola } from "consola";
+import consola from "consola";
 import {
 	ApplicationCommandType,
 	type ChatInputCommandInteraction,
@@ -79,7 +79,9 @@ const commands: ExecutableCommand[] = [
 			interaction.deferReply();
 			try {
 				await transcribe(videoFileId);
-				interaction.editReply("Transcription completed. (THE CAKE IS A LIE)");
+				await interaction.editReply(
+					"Transcription completed. (THE CAKE IS A LIE)",
+				);
 			} catch (error) {
 				await interaction.editReply("Failed to transcribe.");
 				console.error(error);
