@@ -36,20 +36,21 @@ export const transcribe = async (videoFileId: string) => {
 	// split into files with a maximum size of 23 MiB
 	// file size limit of Whisper API is 25 MB
 	// ref: https://platform.openai.com/docs/guides/speech-to-text
-	const splittedAudioFilePaths = await splitAudio(audioFilePath, 23 << 20);
-	consola.info(`Splitted audio into ${splittedAudioFilePaths.length} files`);
+	const audioSegments = await splitAudio(audioFilePath, 23 << 20);
+	consola.info(
+		`Split audio into ${audioSegments.length} files (total ${
+			audioSegments.at(-1)?.endTime
+		} seconds)`,
+	);
 
 	const transcriptions = await Promise.all(
-		splittedAudioFilePaths.map((splittedAudioFilePath) =>
-			transcribeAudioFile(splittedAudioFilePath, "ja"),
-		),
+		audioSegments.map(({ path }) => transcribeAudioFile(path, "ja")),
 	);
 	const text = transcriptions.flat().join("\n");
-	await write(
-		join(
-			tempDir,
-			`${basename(videoFilePath, extname(videoFilePath))}_transcription.txt`,
-		),
-		text,
+	const transcriptionFilePath = join(
+		tempDir,
+		`${basename(videoFilePath, extname(videoFilePath))}_transcription.txt`,
 	);
+	await write(transcriptionFilePath, text);
+	consola.info(`Transcribed audio to ${transcriptionFilePath}`);
 };

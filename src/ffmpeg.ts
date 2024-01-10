@@ -27,16 +27,22 @@ export const extractAudio = async (videoFilePath: string) => {
 	});
 };
 
+type AudioSegment = {
+	path: string;
+	startTime: number;
+	endTime: number;
+};
+
 /**
  * Split an audio file into multiple files with a maximum size.
  * @param sourcePath Path to the audio file
  * @param maxFileSize Maximum size of each file
- * @returns Paths to the splitted audio files
+ * @returns Array of audio segments, each of which has a path to the audio file, start time, and end time
  */
 export const splitAudio = async (
 	sourcePath: string,
 	maxFileSize: number,
-): Promise<string[]> =>
+): Promise<AudioSegment[]> =>
 	promisify<string, Ffmpeg.FfprobeData>(Ffmpeg.ffprobe)(sourcePath)
 		.then(({ format: { duration, size } }) => {
 			if (!(duration && size)) {
@@ -64,8 +70,14 @@ export const splitAudio = async (
 		})
 		.then(async (listFilePath) => {
 			const csv = await file(listFilePath).text();
-			return (parse(csv) as string[][])
-				.map((row) => row[0])
-				.filter((path): path is string => !!path)
-				.map((path) => join(dirname(listFilePath), path));
+			return (parse(csv) as string[][]).map((row) => {
+				if (!(row[0] && row[1] && row[2])) {
+					throw new Error("Failed to parse CSV file.");
+				}
+				return {
+					path: join(dirname(listFilePath), row[0]),
+					startTime: Number(row[1]),
+					endTime: Number(row[2]),
+				};
+			});
 		});
