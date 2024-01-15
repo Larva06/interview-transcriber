@@ -139,12 +139,6 @@ export const transcribe = async (
 
 		const [parentFolder, audioFile, transcriptionFile, proofreadFile] =
 			await Promise.all(results);
-		consola.info(`The parent folder is ${parentFolder?.webViewLink}`);
-		consola.info(`Uploaded audio to ${audioFile?.webViewLink}`);
-		consola.info(`Uploaded transcription to ${transcriptionFile?.webViewLink}`);
-		consola.info(
-			`Uploaded proofread transcription to ${proofreadFile?.webViewLink}`,
-		);
 		if (!(audioFile && transcriptionFile && proofreadFile)) {
 			// parentFolder is undefined if the video file is not in a folder
 			throw new Error("Failed to upload files.");
