@@ -52,12 +52,24 @@ export const transcribe = async (
 
 		const results: ReturnType<typeof uploadFile>[] = [];
 		if (parentFolderId) {
-			results.push(getFileMetadata(parentFolderId, ["name", "webViewLink"]));
+			results.push(
+				getFileMetadata(parentFolderId, ["name", "webViewLink"]).then(
+					(data) => {
+						consola.info(`Parent folder: ${data.name} (${data.webViewLink})`);
+						return data;
+					},
+				),
+			);
 		}
 
 		const audioFilePath = await extractAudio(videoFilePath);
 		consola.info(`Extracted audio to ${audioFilePath}`);
-		results.push(uploadFile(audioFilePath, parentFolderId));
+		results.push(
+			uploadFile(audioFilePath, parentFolderId).then((data) => {
+				consola.info(`Uploaded audio to ${data.webViewLink}`);
+				return data;
+			}),
+		);
 
 		const audioSegments = await splitAudio(
 			audioFilePath,
@@ -90,7 +102,10 @@ export const transcribe = async (
 				transcriptionFilePath,
 				parentFolderId,
 				"application/vnd.google-apps.document",
-			),
+			).then((data) => {
+				consola.info(`Uploaded transcription to ${data.webViewLink}`);
+				return data;
+			}),
 		);
 
 		const proofreadText = await proofreadTranscription(
@@ -116,7 +131,10 @@ export const transcribe = async (
 				proofreadFilePath,
 				parentFolderId,
 				"application/vnd.google-apps.document",
-			),
+			).then((data) => {
+				consola.info(`Uploaded proofread transcription to ${data.webViewLink}`);
+				return data;
+			}),
 		);
 
 		const [parentFolder, audioFile, transcriptionFile, proofreadFile] =
