@@ -12,6 +12,12 @@ export const openaiClient = new openAi({
 });
 
 /**
+ * Maximum file size for Whisper API.
+ * @see https://platform.openai.com/docs/api-reference/speech-to-text
+ */
+export const whisperMaxFileSize = 25 * 1000 * 1000;
+
+/**
  * Gemini API client.
  */
 export const geminiClient = new GoogleGenerativeAI(env.GEMINI_API_KEY);

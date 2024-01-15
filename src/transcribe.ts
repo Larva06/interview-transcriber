@@ -3,7 +3,11 @@ import { tmpdir } from "node:os";
 import { basename, extname, join } from "node:path";
 import { write } from "bun";
 import consola from "consola";
-import { proofreadTranscription, transcribeAudioFile } from "./ai";
+import {
+	proofreadTranscription,
+	transcribeAudioFile,
+	whisperMaxFileSize,
+} from "./ai";
 import { extractAudio, splitAudio } from "./ffmpeg";
 import { downloadFile, getFileMetadata, uploadFile } from "./gdrive";
 
@@ -53,10 +57,10 @@ export const transcribe = async (
 	consola.info(`Extracted audio to ${audioFilePath}`);
 	results.push(uploadFile(audioFilePath, parentFolderId));
 
-	// split into files with a maximum size of 23 MiB
-	// file size limit of Whisper API is 25 MB
-	// ref: https://platform.openai.com/docs/guides/speech-to-text
-	const audioSegments = await splitAudio(audioFilePath, 23 << 20);
+	const audioSegments = await splitAudio(
+		audioFilePath,
+		whisperMaxFileSize * 0.95,
+	);
 	consola.info(
 		`Split audio into ${audioSegments.length} files (total ${
 			audioSegments.at(-1)?.endTime
