@@ -1,6 +1,6 @@
 import { createReadStream, createWriteStream } from "node:fs";
 import { auth, drive_v3 } from "@googleapis/drive";
-import { env } from "bun";
+import { env, file } from "bun";
 
 /**
  * Google Drive API client with scopes of `drive.readonly` and `drive.file`.
@@ -126,7 +126,7 @@ export const uploadFile = async (
 				...(convertTo ? { mimeType: convertTo } : {}),
 			},
 			media: {
-				body: createReadStream(path),
+				body: convertTo ? await file(path).text() : createReadStream(path),
 			},
 		})
 		.then(({ data }) => {
