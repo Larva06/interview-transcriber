@@ -136,6 +136,7 @@ const commands: ExecutableCommand[] = [
 								].map(({ keyEn, keyJa, file: { name, webViewLink } }) => ({
 									name: language === "en" ? keyEn : keyJa,
 									value: `[${name}](${webViewLink})`,
+									inline: true,
 								})),
 							)
 							.setColor("Green")
