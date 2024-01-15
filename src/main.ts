@@ -74,8 +74,6 @@ discordClient.once(Events.ClientReady, async (client) => {
 	consola.ready("Discord bot is now ready!");
 	consola.info(`Logged in as ${client.user.tag}.`);
 
-	client.user.setActivity("Whisper", { type: ActivityType.Streaming });
-
 	const application = await client.application.fetch();
 	const botSettingsUrl = `https://discord.com/developers/applications/${application.id}/bot`;
 	if (application.botPublic) {
