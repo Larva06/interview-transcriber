@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { mkdtemp, rmdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, extname, join } from "node:path";
@@ -38,6 +39,7 @@ export const transcribe = async (
 	if (!videoFile.mimeType.startsWith("video/")) {
 		throw new Error("Specified file is not a video.");
 	}
+	const videoBasename = basename(videoFile.name, extname(videoFile.name));
 	consola.info(`File: ${videoFile.name} (${videoFile.webViewLink})`);
 	const parentFolderId = videoFile.parents[0];
 
@@ -46,7 +48,8 @@ export const transcribe = async (
 	try {
 		const videoFilePath = await downloadFile(
 			videoFileId,
-			join(tempDir, videoFile.name),
+			// use UUID to avoid non-ASCII characters in the file name which causes an error in whisper
+			join(tempDir, randomUUID() + extname(videoFile.name)),
 		);
 		consola.info(`Downloaded to ${videoFilePath}`);
 
@@ -65,7 +68,7 @@ export const transcribe = async (
 		const audioFilePath = await extractAudio(videoFilePath);
 		consola.info(`Extracted audio to ${audioFilePath}`);
 		results.push(
-			uploadFile(audioFilePath, parentFolderId).then((data) => {
+			uploadFile(audioFilePath, videoBasename, parentFolderId).then((data) => {
 				consola.info(`Uploaded audio to ${data.webViewLink}`);
 				return data;
 			}),
@@ -100,6 +103,7 @@ export const transcribe = async (
 		results.push(
 			uploadFile(
 				transcriptionFilePath,
+				videoBasename,
 				parentFolderId,
 				"application/vnd.google-apps.document",
 			).then((data) => {
@@ -129,6 +133,7 @@ export const transcribe = async (
 		results.push(
 			uploadFile(
 				proofreadFilePath,
+				videoBasename,
 				parentFolderId,
 				"application/vnd.google-apps.document",
 			).then((data) => {

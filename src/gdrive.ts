@@ -108,12 +108,14 @@ export const downloadFile = async (fileId: string, path: string) =>
 /**
  * Upload a file to Google Drive.
  * @param path path to the file
+ * @param fileBasename basename of the file to upload (without extension)
  * @param parentFolderId Google Drive folder ID to upload the file to
  * @param convertTo Google Docs MIME type to convert the file to
  * @returns Google Drive file metadata of the uploaded file
  */
 export const uploadFile = async (
 	path: string,
+	fileBasename?: string,
 	parentFolderId?: string,
 	convertTo?: `application/vnd.google-apps.${
 		| "document"
@@ -125,7 +127,10 @@ export const uploadFile = async (
 			fields: "name,webViewLink",
 			requestBody: {
 				// remove extension if converting
-				name: basename(path, convertTo ? extname(path) : undefined),
+				name:
+					fileBasename ?? basename(path, extname(path)) + convertTo
+						? ""
+						: extname(path),
 				...(parentFolderId ? { parents: [parentFolderId] } : {}),
 				...(convertTo ? { mimeType: convertTo } : {}),
 			},
