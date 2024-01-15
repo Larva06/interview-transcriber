@@ -1,4 +1,4 @@
-import { mkdtemp } from "node:fs/promises";
+import { mkdtemp, rmdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, extname, join } from "node:path";
 import { write } from "bun";
@@ -42,98 +42,103 @@ export const transcribe = async (
 	const parentFolderId = videoFile.parents[0];
 
 	const tempDir = await mkdtemp(join(tmpdir(), "interview-transcriber-"));
-	const videoFilePath = await downloadFile(
-		videoFileId,
-		join(tempDir, videoFile.name),
-	);
-	consola.info(`Downloaded to ${videoFilePath}`);
 
-	const results: ReturnType<typeof uploadFile>[] = [];
-	if (parentFolderId) {
-		results.push(getFileMetadata(parentFolderId, ["name", "webViewLink"]));
-	}
+	try {
+		const videoFilePath = await downloadFile(
+			videoFileId,
+			join(tempDir, videoFile.name),
+		);
+		consola.info(`Downloaded to ${videoFilePath}`);
 
-	const audioFilePath = await extractAudio(videoFilePath);
-	consola.info(`Extracted audio to ${audioFilePath}`);
-	results.push(uploadFile(audioFilePath, parentFolderId));
+		const results: ReturnType<typeof uploadFile>[] = [];
+		if (parentFolderId) {
+			results.push(getFileMetadata(parentFolderId, ["name", "webViewLink"]));
+		}
 
-	const audioSegments = await splitAudio(
-		audioFilePath,
-		whisperMaxFileSize * 0.95,
-	);
-	consola.info(
-		`Split audio into ${audioSegments.length} files (total ${
-			audioSegments.at(-1)?.endTime
-		} seconds)`,
-	);
+		const audioFilePath = await extractAudio(videoFilePath);
+		consola.info(`Extracted audio to ${audioFilePath}`);
+		results.push(uploadFile(audioFilePath, parentFolderId));
 
-	const segmenter = new Intl.Segmenter(language);
+		const audioSegments = await splitAudio(
+			audioFilePath,
+			whisperMaxFileSize * 0.95,
+		);
+		consola.info(
+			`Split audio into ${audioSegments.length} files (total ${
+				audioSegments.at(-1)?.endTime
+			} seconds)`,
+		);
 
-	const transcriptions = await Promise.all(
-		audioSegments.map(({ path }) => transcribeAudioFile(path, language)),
-	);
-	const transcribedText = transcriptions.flat().join("\n");
-	const transcriptionFilePath = join(
-		tempDir,
-		`${basename(videoFilePath, extname(videoFilePath))}_transcription.txt`,
-	);
-	await write(transcriptionFilePath, transcribedText);
-	consola.info(
-		`Transcribed audio to ${transcriptionFilePath} (${
-			[...segmenter.segment(transcribedText)].length
-		} characters)`,
-	);
-	results.push(
-		uploadFile(
-			transcriptionFilePath,
-			parentFolderId,
-			"application/vnd.google-apps.document",
-		),
-	);
+		const segmenter = new Intl.Segmenter(language);
 
-	const proofreadText = await proofreadTranscription(
-		transcribedText,
-		language,
-		proofreadModel,
-	);
-	const proofreadFilePath = join(
-		tempDir,
-		`${basename(videoFilePath, extname(videoFilePath))}_proofread.txt`,
-	);
-	await write(
-		proofreadFilePath,
-		`model: ${proofreadText.model}\nprompt:\n${proofreadText.prompt}\n\n---\n\n${proofreadText.response}`,
-	);
-	consola.info(
-		`Proofread transcription to ${proofreadFilePath} (${
-			[...segmenter.segment(proofreadText.response)].length
-		} characters)`,
-	);
-	results.push(
-		uploadFile(
+		const transcriptions = await Promise.all(
+			audioSegments.map(({ path }) => transcribeAudioFile(path, language)),
+		);
+		const transcribedText = transcriptions.flat().join("\n");
+		const transcriptionFilePath = join(
+			tempDir,
+			`${basename(videoFilePath, extname(videoFilePath))}_transcription.txt`,
+		);
+		await write(transcriptionFilePath, transcribedText);
+		consola.info(
+			`Transcribed audio to ${transcriptionFilePath} (${
+				[...segmenter.segment(transcribedText)].length
+			} characters)`,
+		);
+		results.push(
+			uploadFile(
+				transcriptionFilePath,
+				parentFolderId,
+				"application/vnd.google-apps.document",
+			),
+		);
+
+		const proofreadText = await proofreadTranscription(
+			transcribedText,
+			language,
+			proofreadModel,
+		);
+		const proofreadFilePath = join(
+			tempDir,
+			`${basename(videoFilePath, extname(videoFilePath))}_proofread.txt`,
+		);
+		await write(
 			proofreadFilePath,
-			parentFolderId,
-			"application/vnd.google-apps.document",
-		),
-	);
+			`model: ${proofreadText.model}\nprompt:\n${proofreadText.prompt}\n\n---\n\n${proofreadText.response}`,
+		);
+		consola.info(
+			`Proofread transcription to ${proofreadFilePath} (${
+				[...segmenter.segment(proofreadText.response)].length
+			} characters)`,
+		);
+		results.push(
+			uploadFile(
+				proofreadFilePath,
+				parentFolderId,
+				"application/vnd.google-apps.document",
+			),
+		);
 
-	const [parentFolder, audioFile, transcriptionFile, proofreadFile] =
-		await Promise.all(results);
-	consola.info(`The parent folder is ${parentFolder?.webViewLink}`);
-	consola.info(`Uploaded audio to ${audioFile?.webViewLink}`);
-	consola.info(`Uploaded transcription to ${transcriptionFile?.webViewLink}`);
-	consola.info(
-		`Uploaded proofread transcription to ${proofreadFile?.webViewLink}`,
-	);
-	// parentFolder is undefined if the video file is not in a folder
-	if (!(audioFile && transcriptionFile && proofreadFile)) {
-		throw new Error("Failed to upload files.");
+		const [parentFolder, audioFile, transcriptionFile, proofreadFile] =
+			await Promise.all(results);
+		consola.info(`The parent folder is ${parentFolder?.webViewLink}`);
+		consola.info(`Uploaded audio to ${audioFile?.webViewLink}`);
+		consola.info(`Uploaded transcription to ${transcriptionFile?.webViewLink}`);
+		consola.info(
+			`Uploaded proofread transcription to ${proofreadFile?.webViewLink}`,
+		);
+		if (!(audioFile && transcriptionFile && proofreadFile)) {
+			// parentFolder is undefined if the video file is not in a folder
+			throw new Error("Failed to upload files.");
+		}
+		return {
+			video: videoFile,
+			parent: parentFolder,
+			audio: audioFile,
+			transcription: transcriptionFile,
+			proofreadTranscription: proofreadFile,
+		};
+	} finally {
+		await rmdir(tempDir, { recursive: true });
 	}
-	return {
-		video: videoFile,
-		parent: parentFolder,
-		audio: audioFile,
-		transcription: transcriptionFile,
-		proofreadTranscription: proofreadFile,
-	};
 };
