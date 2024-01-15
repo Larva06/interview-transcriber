@@ -15,6 +15,7 @@ import {
 	Routes,
 	SlashCommandBuilder,
 	type UserContextMenuCommandInteraction,
+	EmbedBuilder,
 } from "discord.js";
 import { extractFileId } from "./gdrive";
 import { transcribe } from "./transcribe";
@@ -103,43 +104,56 @@ const commands: ExecutableCommand[] = [
 					await transcribe(videoFileId, language, proofreadModel ?? undefined);
 				await interaction.editReply({
 					embeds: [
-						{
-							title: video.name,
-							url: video.webViewLink,
-							fields: [
-								...(parent
-									? [
-											{
-												keyEn: "Folder",
-												keyJa: "フォルダー",
-												file: parent,
-											},
-									  ]
-									: []),
-								{
-									keyEn: "Audio",
-									keyJa: "音声",
-									file: audio,
-								},
-								{
-									keyEn: "Transcription",
-									keyJa: "文字起こし",
-									file: transcription,
-								},
-								{
-									keyEn: "Proofread",
-									keyJa: "校正",
-									file: proofreadTranscription,
-								},
-							].map(({ keyEn, keyJa, file: { name, webViewLink } }) => ({
-								name: language === "en" ? keyEn : keyJa,
-								value: `[${name}](${webViewLink})`,
-							})),
-						},
+						new EmbedBuilder()
+							.setTitle(video.name)
+							.setURL(video.webViewLink)
+							.setFields(
+								[
+									...(parent
+										? [
+												{
+													keyEn: "Folder",
+													keyJa: "フォルダー",
+													file: parent,
+												},
+										  ]
+										: []),
+									{
+										keyEn: "Audio",
+										keyJa: "音声",
+										file: audio,
+									},
+									{
+										keyEn: "Transcription",
+										keyJa: "文字起こし",
+										file: transcription,
+									},
+									{
+										keyEn: "Proofread",
+										keyJa: "校正",
+										file: proofreadTranscription,
+									},
+								].map(({ keyEn, keyJa, file: { name, webViewLink } }) => ({
+									name: language === "en" ? keyEn : keyJa,
+									value: `[${name}](${webViewLink})`,
+								})),
+							)
+							.setColor("Green")
+							.toJSON(),
 					],
 				});
 			} catch (error) {
-				await interaction.editReply("Failed to transcribe.");
+				const message =
+					error instanceof Error ? error.message : JSON.stringify(error);
+				await interaction.editReply({
+					embeds: [
+						new EmbedBuilder()
+							.setTitle("Error")
+							.setDescription(message)
+							.setColor("Red")
+							.toJSON(),
+					],
+				});
 				console.error(error);
 			}
 		},
