@@ -1,7 +1,7 @@
 import { promisify } from "node:util";
 import { env } from "bun";
 import { consola } from "consola";
-import { ActivityType, Client, Events } from "discord.js";
+import { Client, Events } from "discord.js";
 import Ffmpeg from "fluent-ffmpeg";
 import { geminiClient, openaiClient } from "./ai";
 import { commandsListener, registerCommands } from "./commands";
