@@ -95,12 +95,12 @@ const commands: ExecutableCommand[] = [
 			const proofreadModel = interaction.options.getString("proofread_model") as
 				| "gpt-4"
 				| "gemini-pro"
-				| undefined;
+				| null;
 
 			interaction.deferReply();
 			try {
 				const { video, parent, audio, transcription, proofreadTranscription } =
-					await transcribe(videoFileId, language, proofreadModel);
+					await transcribe(videoFileId, language, proofreadModel ?? undefined);
 				await interaction.editReply({
 					embeds: [
 						{
