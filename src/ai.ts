@@ -104,7 +104,7 @@ ${
 		result = response.response.text();
 	}
 	if (!result) {
-		throw new Error("The response from OpenAI API is empty.");
+		throw new Error("The response is empty.");
 	}
 
 	return {
