@@ -5,6 +5,7 @@ import {
 	type ChatInputCommandInteraction,
 	type Client,
 	DiscordAPIError,
+	EmbedBuilder,
 	type Interaction,
 	type MessageContextMenuCommandInteraction,
 	OAuth2Scopes,
@@ -15,7 +16,6 @@ import {
 	Routes,
 	SlashCommandBuilder,
 	type UserContextMenuCommandInteraction,
-	EmbedBuilder,
 } from "discord.js";
 import { extractFileId } from "./gdrive";
 import { transcribe } from "./transcribe";
