@@ -2,6 +2,7 @@ import { createReadStream } from "node:fs";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { env } from "bun";
 import openAi from "openai";
+import { SupportedLanguages } from "./transcribe";
 
 /**
  * OpenAI API client.
@@ -23,7 +24,7 @@ export const geminiClient = new GoogleGenerativeAI(env.GEMINI_API_KEY);
  */
 export const transcribeAudioFile = async (
 	audioFilePath: string,
-	language: "en" | "ja",
+	language: SupportedLanguages,
 ): Promise<string[]> => {
 	const response = (await openaiClient.audio.transcriptions.create({
 		file: createReadStream(audioFilePath),
@@ -42,4 +43,57 @@ export const transcribeAudioFile = async (
 	}; // cast since the library doesn't support verbose_json
 
 	return response.segments.map((segment) => segment.text);
+};
+
+/**
+ * Proofread a transcription.
+ * @param transcription Transcription to proofread
+ * @param language Language of the transcription
+ * @param model AI model to use
+ * @param prompt System prompt to use
+ * @returns Proofread transcription
+ */
+export const proofreadTranscription = async (
+	transcription: string,
+	language: SupportedLanguages,
+	model: "gpt-4" | "gemini-pro",
+): Promise<string> => {
+	const systemPrompt = `You are a web media proofreader.
+The text ${model === "gpt-4" ? "entered by the user" : "below"} is a transcription of the interview.
+Follow the guide below and improve it.
+- Remove redundant or repeating expressions.
+- Remove fillers.
+- Correct grammar errors.
+- Replace unnatural or difficult wordings.
+- Shorten sentences.
+The output style should be the style of an interview, like \`interviewer: \` or \`interviewee\`.
+${language === "en" ? "The response must not include markdown syntax." : "The response must be in Japanese without markdown syntax."}`;
+
+	if (model === "gpt-4") {
+		const response = await openaiClient.chat.completions.create({
+			messages: [
+				{
+					role: "system",
+					content: systemPrompt,
+				},
+				{
+					role: "user",
+					content: transcription,
+				},
+			],
+			model,
+		});
+		const result = response.choices[0]?.message.content;
+		if (!result) {
+			throw new Error("The response from OpenAI API is empty.");
+		}
+		return result;
+	}
+
+	const response = await geminiClient
+		.getGenerativeModel({
+			model,
+		})
+		.generateContent(`${systemPrompt}\n\n---\n\n${transcription}`);
+	return response.response.text();
 };

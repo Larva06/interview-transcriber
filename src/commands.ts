@@ -63,6 +63,16 @@ const commands: ExecutableCommand[] = [
 					)
 					.setRequired(true),
 			)
+			.addStringOption((option) =>
+				option
+					.setName("proofread_model")
+					.setDescription("The AI model to use for proofreading.")
+					.setDescriptionLocalization("ja", "校正に使用する AI モデル")
+					.setChoices(
+						{ name: "GPT-4", value: "gpt-4" },
+						{ name: "Gemini Pro", value: "gemini-pro" },
+					),
+			)
 			.toJSON(),
 		execute: async (interaction) => {
 			const videoFileId = extractFileId(
@@ -76,9 +86,20 @@ const commands: ExecutableCommand[] = [
 				return;
 			}
 
+			const language = interaction.guildLocale?.startsWith("en")
+				? "en"
+				: interaction.guildLocale?.startsWith("ja")
+				  ? "ja"
+				  : undefined;
+
+			const proofreadModel = interaction.options.getString("proofread_model") as
+				| "gpt-4"
+				| "gemini-pro"
+				| undefined;
+
 			interaction.deferReply();
 			try {
-				await transcribe(videoFileId);
+				await transcribe(videoFileId, language, proofreadModel);
 				await interaction.editReply(
 					"Transcription completed. (THE CAKE IS A LIE)",
 				);
