@@ -122,8 +122,8 @@ export const uploadFile = async (
 		.create({
 			fields: "name,webViewLink",
 			requestBody: {
-				...(parentFolderId ? { parents: [parentFolderId] } : undefined),
-				...(convertTo ? { mimeType: convertTo } : undefined),
+				...(parentFolderId ? { parents: [parentFolderId] } : {}),
+				...(convertTo ? { mimeType: convertTo } : {}),
 			},
 			media: {
 				body: createReadStream(path),
