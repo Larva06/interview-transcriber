@@ -1,7 +1,7 @@
 import { createReadStream, createWriteStream } from "node:fs";
 import { basename, extname } from "node:path";
 import { auth, drive_v3 } from "@googleapis/drive";
-import { env, file } from "bun";
+import { env } from "bun";
 import mime from "mime";
 
 /**
@@ -124,7 +124,8 @@ export const uploadFile = async (
 		.create({
 			fields: "name,webViewLink",
 			requestBody: {
-				name: basename(path, convertTo ? undefined : extname(path)),
+				// remove extension if converting
+				name: basename(path, convertTo ? extname(path) : undefined),
 				...(parentFolderId ? { parents: [parentFolderId] } : {}),
 				...(convertTo ? { mimeType: convertTo } : {}),
 			},
