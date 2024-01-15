@@ -1,7 +1,8 @@
 import { createReadStream, createWriteStream } from "node:fs";
+import { basename, extname } from "node:path";
 import { auth, drive_v3 } from "@googleapis/drive";
 import { env, file } from "bun";
-import { basename, extname } from "node:path";
+import mime from "mime";
 
 /**
  * Google Drive API client with scopes of `drive.readonly` and `drive.file`.
@@ -128,7 +129,8 @@ export const uploadFile = async (
 				...(convertTo ? { mimeType: convertTo } : {}),
 			},
 			media: {
-				body: convertTo ? await file(path).text() : createReadStream(path),
+				...(convertTo ? { mimeType: mime.getType(path) ?? "text/plain" } : {}),
+				body: createReadStream(path),
 			},
 		})
 		.then(({ data }) => {
