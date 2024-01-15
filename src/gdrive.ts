@@ -1,6 +1,7 @@
 import { createReadStream, createWriteStream } from "node:fs";
 import { auth, drive_v3 } from "@googleapis/drive";
 import { env, file } from "bun";
+import { basename, extname } from "node:path";
 
 /**
  * Google Drive API client with scopes of `drive.readonly` and `drive.file`.
@@ -122,6 +123,7 @@ export const uploadFile = async (
 		.create({
 			fields: "name,webViewLink",
 			requestBody: {
+				name: basename(path, convertTo ? undefined : extname(path)),
 				...(parentFolderId ? { parents: [parentFolderId] } : {}),
 				...(convertTo ? { mimeType: convertTo } : {}),
 			},
