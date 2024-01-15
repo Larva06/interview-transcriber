@@ -1,4 +1,4 @@
-import { createWriteStream } from "node:fs";
+import { createReadStream, createWriteStream } from "node:fs";
 import { auth, drive_v3 } from "@googleapis/drive";
 import { env } from "bun";
 
@@ -39,7 +39,30 @@ export const extractFileId = (url: string): string | undefined => {
 };
 
 /**
+ * Get metadata of a file from Google Drive.
+ * @param fileId Google Drive file ID
+ * @param fields selector for the fields to get
+ * @see https://developers.google.com/drive/api/guides/fields-parameter
+ * @returns Google Drive file metadata
+ */
+export const getFileMetadata = async (
+	fileId: string,
+	fields?: string | string[],
+) =>
+	driveClient.files
+		.get({
+			fileId: fileId,
+			...(fields
+				? { fields: Array.isArray(fields) ? fields.join(",") : fields }
+				: undefined),
+		})
+		.then(({ data }) => data);
+
+/**
  * Download a file from Google Drive.
+ * @param fileId Google Drive file ID
+ * @param path path to save the file
+ * @returns path to the downloaded file
  */
 export const downloadFile = async (fileId: string, path: string) =>
 	driveClient.files
@@ -63,3 +86,30 @@ export const downloadFile = async (fileId: string, path: string) =>
 						.pipe(createWriteStream(path));
 				}),
 		);
+
+/**
+ * Upload a file to Google Drive.
+ * @param path path to the file
+ * @param parentFolderId Google Drive folder ID to upload the file to
+ * @param convertTo Google Docs MIME type to convert the file to
+ * @returns Google Drive file metadata of the uploaded file
+ */
+export const uploadFile = async (
+	path: string,
+	parentFolderId?: string,
+	convertTo?: `application/vnd.google-apps.${
+		| "document"
+		| "spreadsheet"
+		| "presentation"}`,
+) =>
+	driveClient.files
+		.create({
+			requestBody: {
+				...(parentFolderId ? { parents: [parentFolderId] } : undefined),
+				...(convertTo ? { mimeType: convertTo } : undefined),
+			},
+			media: {
+				body: createReadStream(path),
+			},
+		})
+		.then(({ data }) => data);

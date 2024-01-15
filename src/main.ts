@@ -50,11 +50,19 @@ consola.ready("Gemini API client is now ready!");
 
 consola.start("Initializing Google Drive API client...");
 consola.info(`Service account email: ${env.GOOGLE_SERVICE_ACCOUNT_EMAIL}`);
-const files = await driveClient.files.list();
+const files = await driveClient.files.list({
+	fields: "files(owners)",
+});
 // exit if the service account has access to no files
-if (!files.data.files?.length) {
+// exclude files owned by the service account itself
+// only legacy files have multiple owners, so we do not support them
+// ref: https://developers.google.com/drive/api/reference/rest/v3/files#File.FIELDS.owners
+if (
+	!files.data.files?.filter(({ owners }) => owners?.[0] && !owners?.[0]?.me)
+		.length
+) {
 	consola.warn(
-		"No files are shared to the service account in Google Drive. Share some files to the service account and try again.",
+		"No files are shared to the service account in Google Drive. Share some files to the service account.",
 	);
 }
 consola.ready("Google Drive API client is now ready!");
