@@ -67,7 +67,11 @@ Follow the guide below and improve it.
 - Replace unnatural or difficult wordings.
 - Shorten sentences.
 The output style should be the style of an interview, like \`interviewer: \` or \`interviewee\`.
-${language === "en" ? "The response must not include markdown syntax." : "The response must be in Japanese without markdown syntax."}`;
+${
+	language === "en"
+		? "The response must not include markdown syntax."
+		: "The response must be in Japanese without markdown syntax."
+}`;
 
 	if (model === "gpt-4") {
 		const response = await openaiClient.chat.completions.create({
