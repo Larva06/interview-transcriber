@@ -39,15 +39,24 @@ export const extractFileId = (url: string): string | undefined => {
 };
 
 /**
+ * Google Drive file metadata only with required fields.
+ */
+type FileMetadata<K extends keyof drive_v3.Schema$File> = {
+	[P in K]: NonNullable<drive_v3.Schema$File[P]>;
+};
+
+/**
  * Get metadata of a file from Google Drive.
  * @param fileId Google Drive file ID
  * @param fields selector for the fields to get
  * @see https://developers.google.com/drive/api/guides/fields-parameter
  * @returns Google Drive file metadata
  */
-export const getFileMetadata = async (
+export const getFileMetadata = async <
+	F extends string | (keyof drive_v3.Schema$File)[],
+>(
 	fileId: string,
-	fields?: string | string[],
+	fields?: F,
 ) =>
 	driveClient.files
 		.get({
@@ -56,7 +65,14 @@ export const getFileMetadata = async (
 				? { fields: Array.isArray(fields) ? fields.join(",") : fields }
 				: undefined),
 		})
-		.then(({ data }) => data);
+		.then(({ data }) => {
+			if (Array.isArray(fields) && fields.some((field) => !data[field])) {
+				throw new Error("Failed to get file metadata.");
+			}
+			return data as F extends (keyof drive_v3.Schema$File)[]
+				? FileMetadata<F[number]>
+				: drive_v3.Schema$File;
+		});
 
 /**
  * Download a file from Google Drive.
@@ -104,6 +120,7 @@ export const uploadFile = async (
 ) =>
 	driveClient.files
 		.create({
+			fields: "name,webViewLink",
 			requestBody: {
 				...(parentFolderId ? { parents: [parentFolderId] } : undefined),
 				...(convertTo ? { mimeType: convertTo } : undefined),
@@ -112,4 +129,9 @@ export const uploadFile = async (
 				body: createReadStream(path),
 			},
 		})
-		.then(({ data }) => data);
+		.then(({ data }) => {
+			if (!(data.name && data.webViewLink)) {
+				throw new Error("Failed to upload file.");
+			}
+			return data as FileMetadata<"name" | "webViewLink">;
+		});

@@ -53,11 +53,11 @@ export const transcribeAudioFile = async (
  * @param prompt System prompt to use
  * @returns Proofread transcription
  */
-export const proofreadTranscription = async (
+export const proofreadTranscription = async <M extends "gpt-4" | "gemini-pro">(
 	transcription: string,
 	language: SupportedLanguages,
-	model: "gpt-4" | "gemini-pro",
-): Promise<string> => {
+	model: M,
+): Promise<{ model: M; prompt: string; response: string }> => {
 	const systemPrompt = `You are a web media proofreader.
 The text ${model === "gpt-4" ? "entered by the user" : "below"} is a transcription of the interview.
 Follow the guide below and improve it.
@@ -73,6 +73,7 @@ ${
 		: "The response must be in Japanese without markdown syntax."
 }`;
 
+	let result = "";
 	if (model === "gpt-4") {
 		const response = await openaiClient.chat.completions.create({
 			messages: [
@@ -87,17 +88,22 @@ ${
 			],
 			model,
 		});
-		const result = response.choices[0]?.message.content;
-		if (!result) {
-			throw new Error("The response from OpenAI API is empty.");
-		}
-		return result;
+		result = response.choices[0]?.message.content ?? "";
+	} else {
+		const response = await geminiClient
+			.getGenerativeModel({
+				model,
+			})
+			.generateContent(`${systemPrompt}\n\n---\n\n${transcription}`);
+		result = response.response.text();
+	}
+	if (!result) {
+		throw new Error("The response from OpenAI API is empty.");
 	}
 
-	const response = await geminiClient
-		.getGenerativeModel({
-			model,
-		})
-		.generateContent(`${systemPrompt}\n\n---\n\n${transcription}`);
-	return response.response.text();
+	return {
+		model,
+		prompt: systemPrompt,
+		response: result,
+	};
 };

@@ -1,7 +1,6 @@
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, extname, join } from "node:path";
-import { drive_v3 } from "@googleapis/drive";
 import { write } from "bun";
 import consola from "consola";
 import { proofreadTranscription, transcribeAudioFile } from "./ai";
@@ -26,31 +25,28 @@ export const transcribe = async (
 	proofreadModel: Parameters<typeof proofreadTranscription>[2] = "gemini-pro",
 ) => {
 	consola.info(`Transcribing ${videoFileId}...`);
-	const {
-		name: fileName,
-		webViewLink,
-		mimeType,
-		parents,
-	} = await getFileMetadata(videoFileId, "name,webViewLink,mimeType,parents");
-	if (!(fileName && webViewLink && mimeType && parents)) {
-		throw new Error("Failed to get file metadata from Google Drive API.");
-	}
-	if (!mimeType?.startsWith("video/")) {
+	const videoFile = await getFileMetadata(videoFileId, [
+		"name",
+		"webViewLink",
+		"mimeType",
+		"parents",
+	]);
+	if (!videoFile.mimeType.startsWith("video/")) {
 		throw new Error("Specified file is not a video.");
 	}
-	consola.info(`File: ${fileName} (${webViewLink})`);
-	const parentFolderId = parents[0];
+	consola.info(`File: ${videoFile.name} (${videoFile.webViewLink})`);
+	const parentFolderId = videoFile.parents[0];
 
 	const tempDir = await mkdtemp(join(tmpdir(), "interview-transcriber-"));
 	const videoFilePath = await downloadFile(
 		videoFileId,
-		join(tempDir, fileName),
+		join(tempDir, videoFile.name),
 	);
 	consola.info(`Downloaded to ${videoFilePath}`);
 
-	const results: Promise<drive_v3.Schema$File>[] = [];
+	const results: ReturnType<typeof uploadFile>[] = [];
 	if (parentFolderId) {
-		results.push(getFileMetadata(parentFolderId, "name,webViewLink"));
+		results.push(getFileMetadata(parentFolderId, ["name", "webViewLink"]));
 	}
 
 	const audioFilePath = await extractAudio(videoFilePath);
@@ -100,10 +96,13 @@ export const transcribe = async (
 		tempDir,
 		`${basename(videoFilePath, extname(videoFilePath))}_proofread.txt`,
 	);
-	await write(proofreadFilePath, proofreadText);
+	await write(
+		proofreadFilePath,
+		`model: ${proofreadText.model}\nprompt:\n${proofreadText.prompt}\n\n---\n\n${proofreadText.response}`,
+	);
 	consola.info(
 		`Proofread transcription to ${proofreadFilePath} (${
-			[...segmenter.segment(proofreadText)].length
+			[...segmenter.segment(proofreadText.response)].length
 		} characters)`,
 	);
 	results.push(
@@ -116,15 +115,21 @@ export const transcribe = async (
 
 	const [parentFolder, audioFile, transcriptionFile, proofreadFile] =
 		await Promise.all(results);
+	consola.info(`The parent folder is ${parentFolder?.webViewLink}`);
 	consola.info(`Uploaded audio to ${audioFile?.webViewLink}`);
 	consola.info(`Uploaded transcription to ${transcriptionFile?.webViewLink}`);
 	consola.info(
 		`Uploaded proofread transcription to ${proofreadFile?.webViewLink}`,
 	);
+	// parentFolder is undefined if the video file is not in a folder
+	if (!(audioFile && transcriptionFile && proofreadFile)) {
+		throw new Error("Failed to upload files.");
+	}
 	return {
-		parentFolder,
-		audioFile,
-		transcriptionFile,
-		proofreadFile,
+		video: videoFile,
+		parent: parentFolder,
+		audio: audioFile,
+		transcription: transcriptionFile,
+		proofreadTranscription: proofreadFile,
 	};
 };

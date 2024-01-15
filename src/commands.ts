@@ -99,10 +99,45 @@ const commands: ExecutableCommand[] = [
 
 			interaction.deferReply();
 			try {
-				await transcribe(videoFileId, language, proofreadModel);
-				await interaction.editReply(
-					"Transcription completed. (THE CAKE IS A LIE)",
-				);
+				const { video, parent, audio, transcription, proofreadTranscription } =
+					await transcribe(videoFileId, language, proofreadModel);
+				await interaction.editReply({
+					embeds: [
+						{
+							title: video.name,
+							url: video.webViewLink,
+							fields: [
+								...(parent
+									? [
+											{
+												keyEn: "Folder",
+												keyJa: "フォルダー",
+												file: parent,
+											},
+									  ]
+									: []),
+								{
+									keyEn: "Audio",
+									keyJa: "音声",
+									file: audio,
+								},
+								{
+									keyEn: "Transcription",
+									keyJa: "文字起こし",
+									file: transcription,
+								},
+								{
+									keyEn: "Proofread",
+									keyJa: "校正",
+									file: proofreadTranscription,
+								},
+							].map(({ keyEn, keyJa, file: { name, webViewLink } }) => ({
+								name: language === "en" ? keyEn : keyJa,
+								value: `[${name}](${webViewLink})`,
+							})),
+						},
+					],
+				});
 			} catch (error) {
 				await interaction.editReply("Failed to transcribe.");
 				console.error(error);
