@@ -21,5 +21,9 @@ module.exports = {
 		"knip",
 		"commitlint",
 		"automerge",
+		"openai",
+		"consola",
+		"gdrive",
+		"ffprobe",
 	],
 };

@@ -3,6 +3,8 @@
   "name": "interview-transcriber",
   "private": true,
   "scripts": {
+    "start": "bun src/main.ts",
+    "start:screen": "screen -DRS transcriber bun start",
     "commit": "git-cz",
     "check": "npm-run-all check:*",
     "check:biome": "biome check --apply-unsafe .",
@@ -11,6 +13,17 @@
     "check:knip": "knip",
     "ignore-sync": "ignore-sync .",
     "prepare": "husky install"
+  },
+  "dependencies": {
+    "@google/generative-ai": "0.1.3",
+    "@googleapis/drive": "8.5.0",
+    "consola": "3.2.3",
+    "csv-parse": "5.5.3",
+    "discord.js": "14.14.1",
+    "fluent-ffmpeg": "2.1.2",
+    "mime": "4.0.1",
+    "openai": "4.24.1",
+    "unique-string": "3.0.0"
   },
   "devDependencies": {
     "@biomejs/biome": "1.5.2",
@@ -21,6 +34,8 @@
     "@cspell/cspell-types": "8.3.2",
     "@tsconfig/bun": "1.0.1",
     "@tsconfig/strictest": "2.0.2",
+    "@types/fluent-ffmpeg": "2.1.24",
+    "@types/node": "20.10.8",
     "bun-types": "1.0.22",
     "commitizen": "4.3.0",
     "cspell": "8.3.2",
