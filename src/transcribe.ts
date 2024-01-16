@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { basename, extname, join } from "node:path";
 import { write } from "bun";
 import consola from "consola";
+import uniqueString from "unique-string";
 import {
 	proofreadTranscription,
 	transcribeAudioFile,
@@ -10,7 +11,6 @@ import {
 } from "./ai";
 import { extractAudio, splitAudio } from "./ffmpeg";
 import { downloadFile, getFileMetadata, uploadFile } from "./gdrive";
-import uniqueString from "unique-string";
 
 /**
  * Supported languages.
