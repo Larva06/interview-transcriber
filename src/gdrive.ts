@@ -128,9 +128,8 @@ export const uploadFile = async (
 			requestBody: {
 				// remove extension if converting
 				name:
-					fileBasename ?? basename(path, extname(path)) + convertTo
-						? ""
-						: extname(path),
+					(fileBasename ?? basename(path, extname(path))) +
+					(convertTo ? "" : extname(path)),
 				...(parentFolderId ? { parents: [parentFolderId] } : {}),
 				...(convertTo ? { mimeType: convertTo } : {}),
 			},
