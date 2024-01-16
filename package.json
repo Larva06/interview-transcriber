@@ -22,7 +22,8 @@
     "discord.js": "14.14.1",
     "fluent-ffmpeg": "2.1.2",
     "mime": "4.0.1",
-    "openai": "4.24.1"
+    "openai": "4.24.1",
+    "unique-string": "3.0.0"
   },
   "devDependencies": {
     "@biomejs/biome": "1.5.1",

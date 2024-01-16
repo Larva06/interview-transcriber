@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { mkdtemp, rmdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, extname, join } from "node:path";
@@ -11,6 +10,7 @@ import {
 } from "./ai";
 import { extractAudio, splitAudio } from "./ffmpeg";
 import { downloadFile, getFileMetadata, uploadFile } from "./gdrive";
+import uniqueString from "unique-string";
 
 /**
  * Supported languages.
@@ -48,8 +48,8 @@ export const transcribe = async (
 	try {
 		const videoFilePath = await downloadFile(
 			videoFileId,
-			// use UUID to avoid non-ASCII characters in the file name which causes an error in whisper
-			join(tempDir, randomUUID() + extname(videoFile.name)),
+			// use random string to avoid non-ASCII characters in the file name which causes an error in whisper
+			join(tempDir, uniqueString() + extname(videoFile.name)),
 		);
 		consola.info(`Downloaded to ${videoFilePath}`);
 
