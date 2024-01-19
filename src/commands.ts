@@ -70,7 +70,7 @@ const commands: ExecutableCommand[] = [
 					.setDescription("The AI model to use for proofreading.")
 					.setDescriptionLocalization("ja", "校正に使用する AI モデル")
 					.setChoices(
-						{ name: "GPT-4", value: "gpt-4" },
+						{ name: "GPT-4 Turbo", value: "gpt-4-1106-preview" },
 						{ name: "Gemini Pro", value: "gemini-pro" },
 					),
 			)
@@ -94,7 +94,7 @@ const commands: ExecutableCommand[] = [
 				  : undefined;
 
 			const proofreadModel = interaction.options.getString("proofread_model") as
-				| "gpt-4"
+				| "gpt-4-1106-preview"
 				| "gemini-pro"
 				| null;
 

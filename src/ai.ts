@@ -59,13 +59,15 @@ export const transcribeAudioFile = async (
  * @param prompt System prompt to use
  * @returns Proofread transcription
  */
-export const proofreadTranscription = async <M extends "gpt-4" | "gemini-pro">(
+export const proofreadTranscription = async <
+	M extends "gpt-4-1106-preview" | "gemini-pro",
+>(
 	transcription: string,
 	language: SupportedLanguages,
 	model: M,
 ): Promise<{ model: M; prompt: string; response: string }> => {
 	const systemPrompt = `You are a web media proofreader.
-The text ${model === "gpt-4" ? "entered by the user" : "below"} is a transcription of the interview.
+The text ${model === "gpt-4-1106-preview" ? "entered by the user" : "below"} is a transcription of the interview.
 Follow the guide below and improve it.
 - Remove redundant or repeating expressions.
 - Remove fillers.
@@ -80,7 +82,7 @@ ${
 }`;
 
 	let result = "";
-	if (model === "gpt-4") {
+	if (model === "gpt-4-1106-preview") {
 		const response = await openaiClient.chat.completions.create({
 			messages: [
 				{
