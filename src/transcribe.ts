@@ -27,7 +27,7 @@ export type SupportedLanguages = "en" | "ja";
 export const transcribe = async (
 	videoFileId: string,
 	language: SupportedLanguages = "en",
-	proofreadModel: Parameters<typeof proofreadTranscription>[2] = "gemini-pro",
+	proofreadModel: Parameters<typeof proofreadTranscription>[2] = "gemini",
 ) => {
 	consola.info(`Transcribing ${videoFileId}...`);
 	const videoFile = await getFileMetadata(videoFileId, [

@@ -71,9 +71,9 @@ const commands: ExecutableCommand[] = [
 					.setDescription("The AI model to use for proofreading.")
 					.setDescriptionLocalization("ja", "校正に使用する AI モデル")
 					.setChoices(
-						...Object.values(models).map(({ name, modelName }) => ({
+						...Object.entries(models).map(([key, { name }]) => ({
 							name: name,
-							value: modelName,
+							value: key,
 						})),
 					),
 			)
@@ -97,8 +97,8 @@ const commands: ExecutableCommand[] = [
 				  : undefined;
 
 			const proofreadModel = interaction.options.getString("proofread_model") as
-				| (typeof models)[keyof typeof models]["modelName"]
-				| null;
+				| keyof typeof models
+				| undefined;
 
 			interaction.deferReply();
 			try {
