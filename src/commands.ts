@@ -17,6 +17,7 @@ import {
 	SlashCommandBuilder,
 	type UserContextMenuCommandInteraction,
 } from "discord.js";
+import { models } from "./ai";
 import { extractFileId } from "./gdrive";
 import { transcribe } from "./transcribe";
 
@@ -70,8 +71,10 @@ const commands: ExecutableCommand[] = [
 					.setDescription("The AI model to use for proofreading.")
 					.setDescriptionLocalization("ja", "校正に使用する AI モデル")
 					.setChoices(
-						{ name: "GPT-4 Turbo", value: "gpt-4-1106-preview" },
-						{ name: "Gemini Pro", value: "gemini-pro" },
+						...Object.values(models).map(({ name, modelName }) => ({
+							name: name,
+							value: modelName,
+						})),
 					),
 			)
 			.toJSON(),
@@ -94,8 +97,7 @@ const commands: ExecutableCommand[] = [
 				  : undefined;
 
 			const proofreadModel = interaction.options.getString("proofread_model") as
-				| "gpt-4-1106-preview"
-				| "gemini-pro"
+				| (typeof models)[keyof typeof models]["modelName"]
 				| null;
 
 			interaction.deferReply();

@@ -23,6 +23,24 @@ export const whisperMaxFileSize = 25 * 1000 * 1000;
 export const geminiClient = new GoogleGenerativeAI(env.GEMINI_API_KEY);
 
 /**
+ * AI models.
+ */
+export const models = {
+	gpt4: {
+		name: "GPT-4 Turbo",
+		modelName: "gpt-4-1106-preview",
+		// ref: https://platform.openai.com/docs/models/gpt-4-and-gpt-4-turbo
+		maxOutputTokens: 4096,
+	},
+	gemini: {
+		name: "Gemini Pro",
+		modelName: "gemini-pro",
+		// ref: https://ai.google.dev/models/gemini
+		maxOutputTokens: 2048,
+	},
+} as const;
+
+/**
  * Transcribe an audio file.
  * @param audioFilePath Path to the audio file
  * @param language Language of the audio file
@@ -60,7 +78,7 @@ export const transcribeAudioFile = async (
  * @returns Proofread transcription
  */
 export const proofreadTranscription = async <
-	M extends "gpt-4-1106-preview" | "gemini-pro",
+	M extends (typeof models)[keyof typeof models]["modelName"],
 >(
 	transcription: string,
 	language: SupportedLanguages,
