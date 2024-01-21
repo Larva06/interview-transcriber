@@ -1,7 +1,9 @@
 import { createReadStream } from "node:fs";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { env } from "bun";
+import consola from "consola";
 import openAi from "openai";
+import { encoding_for_model } from "tiktoken";
 import { SupportedLanguages } from "./transcribe";
 
 /**
@@ -70,6 +72,119 @@ export const transcribeAudioFile = async (
 };
 
 /**
+ * Count the number of tokens in a text.
+ * @param text Text to count tokens
+ * @param model AI model to use
+ * @returns Number of tokens
+ */
+const countTokens = async (
+	text: string,
+	model: keyof typeof models,
+): Promise<number> => {
+	if (model === "gpt4") {
+		const encoding = encoding_for_model(models[model].modelName);
+		return encoding.encode(text).length;
+	}
+
+	const response = await geminiClient
+		.getGenerativeModel({ model: models[model].modelName })
+		.countTokens(text);
+	return response.totalTokens;
+};
+
+/**
+ * Split a transcription into segments with the tokens less than the maximum.
+ * @param transcription Transcription to split
+ * @param model AI model to use
+ * @param language Language of the transcription
+ * @returns Split transcription
+ */
+const splitTranscription = async (
+	transcription: string,
+	model: keyof typeof models,
+	language: SupportedLanguages,
+	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: the complexity is caused by the algorithm
+): Promise<string[]> => {
+	// only use 70% of the max output tokens since the model generates a longer text than the input
+	const maxInputTokensRatio = 0.7;
+
+	const segmenter = new Intl.Segmenter(language, {
+		// use grapheme segmentation for Japanese since tokenizers often tokenize 1 character as nearly 1 token
+		granularity: language === "en" ? "word" : "grapheme",
+	});
+
+	// split the transcription into segments with the almost same length
+	const transcriptionTokens = await countTokens(transcription, model);
+	const expectedSegments = Math.ceil(
+		transcriptionTokens / (models[model].maxOutputTokens * maxInputTokensRatio),
+	);
+	const segmentLength =
+		[segmenter.segment(transcription)].length / expectedSegments;
+
+	const segments = transcription
+		.split(/\n+/)
+		.filter((line) => line.trim())
+		.reduce<{ text: string; length: number }[][]>(
+			(segments, line) => {
+				// biome-ignore lint/style/noNonNullAssertion: initialized with an array of an empty array
+				const lastSegment = segments.at(-1)!;
+				const lastSegmentLength = lastSegment.reduce(
+					(sum, { length }) => sum + length,
+					0,
+				);
+				const length = [...segmenter.segment(line)].length;
+
+				const segment = {
+					text: line,
+					length,
+				};
+				if (lastSegmentLength + length < segmentLength) {
+					lastSegment.push(segment);
+				} else {
+					segments.push([segment]);
+				}
+				return segments;
+			},
+			[[]],
+		);
+
+	for (let i = 0; ; i++) {
+		const segment = segments[i];
+		// check here since the length of the array may change in the loop
+		if (!segment) {
+			break;
+		}
+
+		while (
+			// tolerate 5% more tokens than the ideal max tokens
+			(await countTokens(segment.map(({ text }) => text).join("\n"), model)) >
+			models[model].maxOutputTokens * (maxInputTokensRatio + 0.05)
+		) {
+			// tolerate if the single line is too long
+			// TODO: split the line into multiple lines
+			if (segment.length === 1) {
+				consola.warn(`Too long line: ${segment[0]?.text}`);
+				break;
+			}
+
+			const lastLine = segment.pop();
+			// unexpected but check just in case
+			if (!lastLine) {
+				break;
+			}
+			const nextSegment = segments[i + 1];
+			if (nextSegment) {
+				nextSegment.unshift(lastLine);
+			} else {
+				segments.push([lastLine]);
+			}
+		}
+	}
+
+	return segments.map((segment) => segment.map(({ text }) => text).join("\n"));
+};
+
+/**
  * Proofread a transcription.
  * @param transcription Transcription to proofread
  * @param language Language of the transcription
@@ -86,6 +201,8 @@ export const proofreadTranscription = async <M extends keyof typeof models>(
 	prompt: string;
 	response: string;
 }> => {
+	const modelName = models[model].modelName;
+
 	const systemPrompt = `You are a web media proofreader.
 The text ${model === "gpt4" ? "entered by the user" : "below"} is a transcription of the interview.
 Follow the guide below and improve it.
@@ -101,39 +218,47 @@ ${
 		: "The response must be in Japanese without markdown syntax."
 }`;
 
-	const modelName = models[model].modelName;
+	const segments = await splitTranscription(transcription, model, language);
 
-	let result = "";
+	let results: string[] = [];
 	if (model === "gpt4") {
-		const response = await openaiClient.chat.completions.create({
-			messages: [
-				{
-					role: "system",
-					content: systemPrompt,
-				},
-				{
-					role: "user",
-					content: transcription,
-				},
-			],
-			model: modelName,
-		});
-		result = response.choices[0]?.message.content ?? "";
+		const responses = await Promise.all(
+			segments.map((segment) =>
+				openaiClient.chat.completions.create({
+					messages: [
+						{
+							role: "system",
+							content: systemPrompt,
+						},
+						{
+							role: "user",
+							content: segment,
+						},
+					],
+					model: modelName,
+				}),
+			),
+		);
+		results = responses.map(({ choices }) => choices[0]?.message.content ?? "");
 	} else {
-		const response = await geminiClient
-			.getGenerativeModel({
-				model: modelName,
-			})
-			.generateContent(`${systemPrompt}\n\n---\n\n${transcription}`);
-		result = response.response.text();
+		const responses = await Promise.all(
+			segments.map((segment) =>
+				geminiClient
+					.getGenerativeModel({
+						model: modelName,
+					})
+					.generateContent(`${systemPrompt}\n\n---\n\n${segment}`),
+			),
+		);
+		results = responses.map(({ response }) => response.text());
 	}
-	if (!result) {
+	if (results.some((result) => !result)) {
 		throw new Error("The response is empty.");
 	}
 
 	return {
 		model: modelName,
 		prompt: systemPrompt,
-		response: result,
+		response: results.join("\n\n"),
 	};
 };

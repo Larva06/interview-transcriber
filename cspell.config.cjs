@@ -25,5 +25,6 @@ module.exports = {
 		"consola",
 		"gdrive",
 		"ffprobe",
+		"tiktoken",
 	],
 };
