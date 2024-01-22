@@ -119,7 +119,7 @@ const splitTranscription = async (
 		transcriptionTokens / (models[model].maxOutputTokens * maxInputTokensRatio),
 	);
 	const segmentLength =
-		[segmenter.segment(transcription)].length / expectedSegments;
+		[...segmenter.segment(transcription)].length / expectedSegments;
 
 	const segments = transcription
 		.split(/\n+/)
@@ -219,6 +219,7 @@ ${
 }`;
 
 	const segments = await splitTranscription(transcription, language, model);
+	consola.info(`Split transcription into ${segments.length} segments`);
 
 	let results: string[] = [];
 	if (model === "gpt4") {
