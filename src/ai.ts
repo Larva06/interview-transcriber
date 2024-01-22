@@ -95,14 +95,14 @@ const countTokens = async (
 /**
  * Split a transcription into segments with the tokens less than the maximum.
  * @param transcription Transcription to split
- * @param model AI model to use
  * @param language Language of the transcription
+ * @param model AI model to use
  * @returns Split transcription
  */
 const splitTranscription = async (
 	transcription: string,
-	model: keyof typeof models,
 	language: SupportedLanguages,
+	model: keyof typeof models,
 	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: the complexity is caused by the algorithm
 ): Promise<string[]> => {
 	// only use 70% of the max output tokens since the model generates a longer text than the input
@@ -218,7 +218,7 @@ ${
 		: "The response must be in Japanese without markdown syntax."
 }`;
 
-	const segments = await splitTranscription(transcription, model, language);
+	const segments = await splitTranscription(transcription, language, model);
 
 	let results: string[] = [];
 	if (model === "gpt4") {
