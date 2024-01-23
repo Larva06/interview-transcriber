@@ -27,12 +27,6 @@ export const extractAudio = async (videoFilePath: string) => {
 	});
 };
 
-type AudioSegment = {
-	path: string;
-	startTime: number;
-	endTime: number;
-};
-
 /**
  * Split an audio file into multiple files with a maximum size.
  * @param sourcePath Path to the audio file
@@ -42,7 +36,13 @@ type AudioSegment = {
 export const splitAudio = async (
 	sourcePath: string,
 	maxFileSize: number,
-): Promise<AudioSegment[]> =>
+): Promise<
+	{
+		path: string;
+		startTime: number;
+		endTime: number;
+	}[]
+> =>
 	promisify<string, Ffmpeg.FfprobeData>(Ffmpeg.ffprobe)(sourcePath).then(
 		({ format: { duration, size } }) => {
 			if (!(duration && size)) {
