@@ -211,7 +211,9 @@ Follow the guide below and improve it.
 - Correct grammar errors.
 - Replace unnatural or difficult wordings.
 - Shorten sentences.
-The output style should be the style of an interview, like \`interviewer: \` or \`interviewee\`.
+The output style should be the style of an interview; You must prefix each paragraph with \`${
+		language === "en" ? "interviewer" : "インタビュアー"
+	}: \` or \`${language === "en" ? "interviewee" : "インタビュイー"}: \`.
 ${
 	language === "en"
 		? "The response must not include markdown syntax."
