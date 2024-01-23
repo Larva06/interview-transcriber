@@ -27,9 +27,9 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.5.3",
-    "@commitlint/cli": "18.4.4",
-    "@commitlint/config-conventional": "18.4.4",
-    "@commitlint/cz-commitlint": "18.4.4",
+    "@commitlint/cli": "18.5.0",
+    "@commitlint/config-conventional": "18.5.0",
+    "@commitlint/cz-commitlint": "18.5.0",
     "@commitlint/types": "18.4.4",
     "@cspell/cspell-types": "8.3.2",
     "@tsconfig/bun": "1.0.1",
