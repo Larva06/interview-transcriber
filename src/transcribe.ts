@@ -68,7 +68,11 @@ export const transcribe = async (
 		const audioFilePath = await extractAudio(videoFilePath);
 		consola.info(`Extracted audio to ${audioFilePath}`);
 		results.push(
-			uploadFile(audioFilePath, videoBasename, parentFolderId).then((data) => {
+			uploadFile(
+				audioFilePath,
+				`${videoBasename}_${language === "en" ? "audio" : "音声"}`,
+				parentFolderId,
+			).then((data) => {
 				consola.info(`Uploaded audio to ${data.webViewLink}`);
 				return data;
 			}),
@@ -103,7 +107,9 @@ export const transcribe = async (
 		results.push(
 			uploadFile(
 				transcriptionFilePath,
-				videoBasename,
+				`${videoBasename}_${
+					language === "en" ? "transcription" : "文字起こし"
+				}`,
 				parentFolderId,
 				"application/vnd.google-apps.document",
 			).then((data) => {
@@ -133,7 +139,7 @@ export const transcribe = async (
 		results.push(
 			uploadFile(
 				proofreadFilePath,
-				videoBasename,
+				`${videoBasename}_${language === "en" ? "proofread" : "校正"}`,
 				parentFolderId,
 				"application/vnd.google-apps.document",
 			).then((data) => {
