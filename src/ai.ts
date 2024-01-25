@@ -115,8 +115,8 @@ const splitTranscription = async (
 	model: keyof typeof models,
 	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: the complexity is caused by the algorithm
 ): Promise<string[]> => {
-	// only use 70% of the max output tokens since the model generates a longer text than the input
-	const maxInputTokensRatio = 0.7;
+	// only use some of the max output tokens since the model ignores the prompt if the input is long
+	const maxInputTokensRatio = 0.4;
 
 	const segmenter = new Intl.Segmenter(language, {
 		// use grapheme segmentation for Japanese since tokenizers often tokenize 1 character as nearly 1 token
