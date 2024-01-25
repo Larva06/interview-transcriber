@@ -213,22 +213,20 @@ export const proofreadTranscription = async <M extends keyof typeof models>(
 }> => {
 	const modelData = models[model];
 
-	const systemPrompt = `You are a web media proofreader.
-The text ${modelData.api === "openai" ? "entered by the user" : "below"} is a transcription of the interview.
-Follow the guide below and improve it.
-- Remove redundant or repeating expressions.
-- Remove fillers.
-- Correct grammar errors.
-- Replace unnatural or difficult wordings.
-- Shorten sentences.
-The output style should be the style of an interview; You must prefix each paragraph with \`${
+	const systemPrompt = `Task: Proofread an interview transcript ${
+		modelData.api === "openai" ? "entered by the user" : "below"
+	} for a web media publication.
+Proofreading guide:
+- Shorten sentences for improved readability.
+- Remove redundancy and repetition.
+- Eliminate filler words and unnecessary pauses.
+- Correct grammatical errors.
+- Replace unnatural or difficult language with more precise alternatives.
+- Never omit any essential information from the interview.
+Output format: Interview style by prefixing each paragraph with "${
 		language === "en" ? "interviewer" : "インタビュアー"
-	}: \` or \`${language === "en" ? "interviewee" : "インタビュイー"}: \`.
-${
-	language === "en"
-		? "The response must not include markdown syntax."
-		: "The response must be in Japanese without markdown syntax."
-}`;
+	}:" or "${language === "en" ? "interviewee" : "インタビュイー"}:".
+Language: ${language === "en" ? "English" : "Japanese"}.`;
 
 	const segments = await splitTranscription(transcription, language, model);
 	consola.info(`Split transcription into ${segments.length} segments`);
