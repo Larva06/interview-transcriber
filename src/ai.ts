@@ -222,7 +222,7 @@ Proofreading guide:
 - Eliminate filler words and unnecessary pauses.
 - Correct grammatical errors.
 - Replace unnatural or difficult language with more precise alternatives.
-- Never omit any essential information from the interview.
+- Never omit any information from the interview.
 Output format: Interview style by prefixing each paragraph with "${
 		language === "en" ? "interviewer" : "インタビュアー"
 	}:" or "${language === "en" ? "interviewee" : "インタビュイー"}:".
