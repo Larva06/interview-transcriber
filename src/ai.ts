@@ -217,11 +217,11 @@ export const proofreadTranscription = async <M extends keyof typeof models>(
 		modelData.api === "openai" ? "entered by the user" : "below"
 	} for a web media publication.
 Proofreading guide:
-- Shorten sentences for improved readability.
 - Remove redundancy and repetition.
 - Eliminate filler words and unnecessary pauses.
 - Correct grammatical errors.
 - Replace unnatural or difficult language with more precise alternatives.
+- Do not summarize.
 - Never omit any information from the interview.
 Output format: Interview style by prefixing each paragraph with "${
 		language === "en" ? "interviewer" : "インタビュアー"
