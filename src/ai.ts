@@ -28,14 +28,23 @@ export const geminiClient = new GoogleGenerativeAI(env.GEMINI_API_KEY);
  * AI models.
  */
 export const models = {
-	gpt4: {
+	gpt4turbo: {
 		name: "GPT-4 Turbo",
+		api: "openai",
 		modelName: "gpt-4-1106-preview",
+		// ref: https://platform.openai.com/docs/models/gpt-4-and-gpt-4-turbo
+		maxOutputTokens: 4096,
+	},
+	gpt4: {
+		name: "GPT-4",
+		api: "openai",
+		modelName: "gpt-4",
 		// ref: https://platform.openai.com/docs/models/gpt-4-and-gpt-4-turbo
 		maxOutputTokens: 4096,
 	},
 	gemini: {
 		name: "Gemini Pro",
+		api: "gemini",
 		modelName: "gemini-pro",
 		// ref: https://ai.google.dev/models/gemini
 		maxOutputTokens: 2048,
@@ -81,13 +90,14 @@ const countTokens = async (
 	text: string,
 	model: keyof typeof models,
 ): Promise<number> => {
-	if (model === "gpt4") {
-		const encoding = encoding_for_model(models[model].modelName);
+	const modelData = models[model];
+	if (modelData.api === "openai") {
+		const encoding = encoding_for_model(modelData.modelName);
 		return encoding.encode(text).length;
 	}
 
 	const response = await geminiClient
-		.getGenerativeModel({ model: models[model].modelName })
+		.getGenerativeModel({ model: modelData.modelName })
 		.countTokens(text);
 	return response.totalTokens;
 };
@@ -105,8 +115,8 @@ const splitTranscription = async (
 	model: keyof typeof models,
 	// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: the complexity is caused by the algorithm
 ): Promise<string[]> => {
-	// only use 70% of the max output tokens since the model generates a longer text than the input
-	const maxInputTokensRatio = 0.7;
+	// only use some of the max output tokens since the model ignores the prompt if the input is long
+	const maxInputTokensRatio = 0.4;
 
 	const segmenter = new Intl.Segmenter(language, {
 		// use grapheme segmentation for Japanese since tokenizers often tokenize 1 character as nearly 1 token
@@ -201,28 +211,28 @@ export const proofreadTranscription = async <M extends keyof typeof models>(
 	prompt: string;
 	response: string;
 }> => {
-	const modelName = models[model].modelName;
+	const modelData = models[model];
 
-	const systemPrompt = `You are a web media proofreader.
-The text ${model === "gpt4" ? "entered by the user" : "below"} is a transcription of the interview.
-Follow the guide below and improve it.
-- Remove redundant or repeating expressions.
-- Remove fillers.
-- Correct grammar errors.
-- Replace unnatural or difficult wordings.
-- Shorten sentences.
-The output style should be the style of an interview, like \`interviewer: \` or \`interviewee\`.
-${
-	language === "en"
-		? "The response must not include markdown syntax."
-		: "The response must be in Japanese without markdown syntax."
-}`;
+	const systemPrompt = `Task: Proofread an interview transcript ${
+		modelData.api === "openai" ? "entered by the user" : "below"
+	} for a web media publication.
+Proofreading guide:
+- Remove redundancy and repetition.
+- Eliminate filler words and unnecessary pauses.
+- Correct grammatical errors.
+- Replace unnatural or difficult language with more precise alternatives.
+- Do not summarize.
+- Never omit any information from the interview.
+Output format: Interview style by prefixing each paragraph with "${
+		language === "en" ? "interviewer" : "インタビュアー"
+	}:" or "${language === "en" ? "interviewee" : "インタビュイー"}:".
+Language: ${language === "en" ? "English" : "Japanese"}.`;
 
 	const segments = await splitTranscription(transcription, language, model);
 	consola.info(`Split transcription into ${segments.length} segments`);
 
 	let results: string[] = [];
-	if (model === "gpt4") {
+	if (modelData.api === "openai") {
 		const responses = await Promise.all(
 			segments.map((segment) =>
 				openaiClient.chat.completions.create({
@@ -236,7 +246,7 @@ ${
 							content: segment,
 						},
 					],
-					model: modelName,
+					model: modelData.modelName,
 				}),
 			),
 		);
@@ -246,7 +256,7 @@ ${
 			segments.map((segment) =>
 				geminiClient
 					.getGenerativeModel({
-						model: modelName,
+						model: modelData.modelName,
 					})
 					.generateContent(`${systemPrompt}\n\n---\n\n${segment}`),
 			),
@@ -258,7 +268,7 @@ ${
 	}
 
 	return {
-		model: modelName,
+		model: modelData.modelName,
 		prompt: systemPrompt,
 		response: results.join("\n\n"),
 	};
