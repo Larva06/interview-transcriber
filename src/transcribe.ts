@@ -9,7 +9,7 @@ import {
 	transcribeAudioFile,
 	whisperMaxFileSize,
 } from "./ai";
-import { extractAudio, splitAudio } from "./ffmpeg";
+import { extractAudio, removeSilence, splitAudio } from "./ffmpeg";
 import { downloadFile, getFileMetadata, uploadFile } from "./gdrive";
 
 /**
@@ -29,7 +29,7 @@ export const transcribe = async (
 	language: SupportedLanguages = "en",
 	proofreadModel: Parameters<typeof proofreadTranscription>[2] = "gemini",
 ) => {
-	consola.info(`Transcribing ${videoFileId}...`);
+	consola.start(`Transcribing ${videoFileId}...`);
 	const videoFile = await getFileMetadata(videoFileId, [
 		"name",
 		"webViewLink",
@@ -46,12 +46,13 @@ export const transcribe = async (
 	const tempDir = await mkdtemp(join(tmpdir(), "interview-transcriber-"));
 
 	try {
+		consola.start("Downloading video file...");
 		const videoFilePath = await downloadFile(
 			videoFileId,
 			// use random string to avoid non-ASCII characters in the file name which causes an error in whisper
 			join(tempDir, uniqueString() + extname(videoFile.name)),
 		);
-		consola.info(`Downloaded to ${videoFilePath}`);
+		consola.success(`Downloaded to ${videoFilePath}`);
 
 		const results: ReturnType<typeof uploadFile>[] = [];
 		if (parentFolderId) {
@@ -65,24 +66,30 @@ export const transcribe = async (
 			);
 		}
 
+		consola.start("Extracting audio...");
 		const audioFilePath = await extractAudio(videoFilePath);
-		consola.info(`Extracted audio to ${audioFilePath}`);
+		consola.success(`Extracted audio to ${audioFilePath}`);
 		results.push(
 			uploadFile(
 				audioFilePath,
 				`${videoBasename}_${language === "en" ? "audio" : "音声"}`,
 				parentFolderId,
 			).then((data) => {
-				consola.info(`Uploaded audio to ${data.webViewLink}`);
+				consola.success(`Uploaded audio to ${data.webViewLink}`);
 				return data;
 			}),
 		);
 
+		consola.start("Removing silence...");
+		const noSilenceAudioFilePath = await removeSilence(audioFilePath);
+		consola.success("Removed silence from the audio");
+
+		consola.start("Splitting audio...");
 		const audioSegments = await splitAudio(
-			audioFilePath,
+			noSilenceAudioFilePath,
 			whisperMaxFileSize * 0.95,
 		);
-		consola.info(
+		consola.success(
 			`Split audio into ${audioSegments.length} files (total ${
 				audioSegments.at(-1)?.endTime
 			} seconds)`,
@@ -90,6 +97,7 @@ export const transcribe = async (
 
 		const segmenter = new Intl.Segmenter(language);
 
+		consola.start("Transcribing audio...");
 		const transcriptions = await Promise.all(
 			audioSegments.map(({ path }) => transcribeAudioFile(path, language)),
 		);
@@ -99,7 +107,7 @@ export const transcribe = async (
 			`${basename(videoFilePath, extname(videoFilePath))}_transcription.txt`,
 		);
 		await write(transcriptionFilePath, transcribedText);
-		consola.info(
+		consola.success(
 			`Transcribed audio to ${transcriptionFilePath} (${
 				[...segmenter.segment(transcribedText)].length
 			} characters)`,
@@ -113,11 +121,12 @@ export const transcribe = async (
 				parentFolderId,
 				"application/vnd.google-apps.document",
 			).then((data) => {
-				consola.info(`Uploaded transcription to ${data.webViewLink}`);
+				consola.success(`Uploaded transcription to ${data.webViewLink}`);
 				return data;
 			}),
 		);
 
+		consola.start("Proofreading transcription...");
 		const proofreadText = await proofreadTranscription(
 			transcribedText,
 			language,
@@ -131,7 +140,7 @@ export const transcribe = async (
 			proofreadFilePath,
 			`model: ${proofreadText.model}\nprompt:\n${proofreadText.prompt}\n\n---\n\n${proofreadText.response}`,
 		);
-		consola.info(
+		consola.success(
 			`Proofread transcription to ${proofreadFilePath} (${
 				[...segmenter.segment(proofreadText.response)].length
 			} characters)`,
@@ -143,7 +152,9 @@ export const transcribe = async (
 				parentFolderId,
 				"application/vnd.google-apps.document",
 			).then((data) => {
-				consola.info(`Uploaded proofread transcription to ${data.webViewLink}`);
+				consola.success(
+					`Uploaded proofread transcription to ${data.webViewLink}`,
+				);
 				return data;
 			}),
 		);
@@ -154,6 +165,7 @@ export const transcribe = async (
 			// parentFolder is undefined if the video file is not in a folder
 			throw new Error("Failed to upload files.");
 		}
+		consola.success(`Transcribed ${videoFileId}.`);
 		return {
 			video: videoFile,
 			parent: parentFolder,
