@@ -9,7 +9,7 @@ import {
 	transcribeAudioFile,
 	whisperMaxFileSize,
 } from "./ai";
-import { extractAudio, splitAudio } from "./ffmpeg";
+import { extractAudio, removeSilence, splitAudio } from "./ffmpeg";
 import { downloadFile, getFileMetadata, uploadFile } from "./gdrive";
 
 /**
@@ -78,8 +78,10 @@ export const transcribe = async (
 			}),
 		);
 
+		const noSilenceAudioFilePath = await removeSilence(audioFilePath);
+
 		const audioSegments = await splitAudio(
-			audioFilePath,
+			noSilenceAudioFilePath,
 			whisperMaxFileSize * 0.95,
 		);
 		consola.info(

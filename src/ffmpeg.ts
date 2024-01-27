@@ -20,9 +20,32 @@ export const extractAudio = async (videoFilePath: string) => {
 		Ffmpeg(videoFilePath)
 			.noVideo()
 			.saveToFile(audioFilePath)
-			.on("end", () => {
-				resolve(audioFilePath);
-			})
+			.on("end", () => resolve(audioFilePath))
+			.on("error", reject);
+	});
+};
+
+/**
+ * Remove silence from an audio file.
+ * @param sourcePath Path to the audio file
+ * @returns Path to the audio file without silence
+ */
+export const removeSilence = async (sourcePath: string) => {
+	const outputFilePath = join(
+		dirname(sourcePath),
+		`${basename(sourcePath, extname(sourcePath))}_no_silence${extname(
+			sourcePath,
+		)}`,
+	);
+
+	return new Promise<string>((resolve, reject) => {
+		Ffmpeg(sourcePath)
+			.outputOptions([
+				// cspell:ignore silenceremove
+				"-af silenceremove=start_periods=1:start_threshold=-50dB:stop_periods=-1:stop_threshold=-50dB:stop_duration=1",
+			])
+			.saveToFile(outputFilePath)
+			.on("end", () => resolve(outputFilePath))
 			.on("error", reject);
 	});
 };
@@ -72,9 +95,7 @@ export const splitAudio = async (
 						`-segment_list ${listFilePath}`,
 					])
 					.saveToFile(audioFilePath)
-					.on("end", () => {
-						resolve(listFilePath);
-					})
+					.on("end", () => resolve(listFilePath))
 					.on("error", reject);
 			}).then(async (listFilePath) => {
 				const csv = await file(listFilePath).text();
