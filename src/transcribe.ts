@@ -46,7 +46,7 @@ export const transcribe = async (
 	const tempDir = await mkdtemp(join(tmpdir(), "interview-transcriber-"));
 
 	try {
-		consola.start("Downloading video file...")
+		consola.start("Downloading video file...");
 		const videoFilePath = await downloadFile(
 			videoFileId,
 			// use random string to avoid non-ASCII characters in the file name which causes an error in whisper
@@ -66,7 +66,7 @@ export const transcribe = async (
 			);
 		}
 
-		consola.start("Extracting audio...")
+		consola.start("Extracting audio...");
 		const audioFilePath = await extractAudio(videoFilePath);
 		consola.success(`Extracted audio to ${audioFilePath}`);
 		results.push(
@@ -80,11 +80,11 @@ export const transcribe = async (
 			}),
 		);
 
-		consola.start("Removing silence...")
+		consola.start("Removing silence...");
 		const noSilenceAudioFilePath = await removeSilence(audioFilePath);
 		consola.success("Removed silence from the audio");
 
-		consola.start("Splitting audio...")
+		consola.start("Splitting audio...");
 		const audioSegments = await splitAudio(
 			noSilenceAudioFilePath,
 			whisperMaxFileSize * 0.95,
@@ -97,7 +97,7 @@ export const transcribe = async (
 
 		const segmenter = new Intl.Segmenter(language);
 
-		consola.start("Transcribing audio...")
+		consola.start("Transcribing audio...");
 		const transcriptions = await Promise.all(
 			audioSegments.map(({ path }) => transcribeAudioFile(path, language)),
 		);
@@ -126,7 +126,7 @@ export const transcribe = async (
 			}),
 		);
 
-		consola.start("Proofreading transcription...")
+		consola.start("Proofreading transcription...");
 		const proofreadText = await proofreadTranscription(
 			transcribedText,
 			language,
@@ -152,7 +152,9 @@ export const transcribe = async (
 				parentFolderId,
 				"application/vnd.google-apps.document",
 			).then((data) => {
-				consola.success(`Uploaded proofread transcription to ${data.webViewLink}`);
+				consola.success(
+					`Uploaded proofread transcription to ${data.webViewLink}`,
+				);
 				return data;
 			}),
 		);
