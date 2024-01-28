@@ -31,7 +31,7 @@ export const models = {
 	gpt4turbo: {
 		name: "GPT-4 Turbo",
 		api: "openai",
-		modelName: "gpt-4-1106-preview",
+		modelName: "gpt-4-turbo-preview",
 		// ref: https://platform.openai.com/docs/models/gpt-4-and-gpt-4-turbo
 		maxOutputTokens: 4096,
 	},
