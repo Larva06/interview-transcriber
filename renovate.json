@@ -2,8 +2,6 @@
 	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
 	"extends": [
 		"config:best-practices",
-		"schedule:daily",
-		"schedule:automergeDaily",
 		":pinVersions",
 		":automergeMinor",
 		":prHourlyLimitNone",
