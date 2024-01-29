@@ -57,35 +57,31 @@ export const transcribe = async (
 		);
 		consola.success(`Downloaded to ${sourceFilePath}`);
 
-		const results: ReturnType<typeof uploadFile>[] = [];
-		if (parentFolderId) {
-			results.push(
-				getFileMetadata(parentFolderId, ["name", "webViewLink"]).then(
+		const parentFolder = parentFolderId
+			? getFileMetadata(parentFolderId, ["name", "webViewLink"]).then(
 					(data) => {
 						consola.info(`Parent folder: ${data.name} (${data.webViewLink})`);
 						return data;
 					},
-				),
-			);
-		}
+			  )
+			: undefined;
 
 		let audioFilePath: string;
+		let audioFile: ReturnType<typeof uploadFile> | undefined = undefined;
 		if (fileType === "audio") {
 			audioFilePath = sourceFilePath;
 		} else {
 			consola.start("Extracting audio...");
 			audioFilePath = await extractAudio(sourceFilePath);
 			consola.success(`Extracted audio to ${audioFilePath}`);
-			results.push(
-				uploadFile(
-					audioFilePath,
-					`${sourceBasename}_${language === "en" ? "audio" : "音声"}`,
-					parentFolderId,
-				).then((data) => {
-					consola.success(`Uploaded audio to ${data.webViewLink}`);
-					return data;
-				}),
-			);
+			audioFile = uploadFile(
+				audioFilePath,
+				`${sourceBasename}_${language === "en" ? "audio" : "音声"}`,
+				parentFolderId,
+			).then((data) => {
+				consola.success(`Uploaded audio to ${data.webViewLink}`);
+				return data;
+			});
 		}
 
 		consola.start("Removing silence...");
@@ -120,19 +116,15 @@ export const transcribe = async (
 				[...segmenter.segment(transcribedText)].length
 			} characters)`,
 		);
-		results.push(
-			uploadFile(
-				transcriptionFilePath,
-				`${sourceBasename}_${
-					language === "en" ? "transcription" : "文字起こし"
-				}`,
-				parentFolderId,
-				"application/vnd.google-apps.document",
-			).then((data) => {
-				consola.success(`Uploaded transcription to ${data.webViewLink}`);
-				return data;
-			}),
-		);
+		const transcriptionFile = uploadFile(
+			transcriptionFilePath,
+			`${sourceBasename}_${language === "en" ? "transcription" : "文字起こし"}`,
+			parentFolderId,
+			"application/vnd.google-apps.document",
+		).then((data) => {
+			consola.success(`Uploaded transcription to ${data.webViewLink}`);
+			return data;
+		});
 
 		consola.start("Proofreading transcription...");
 		const proofreadText = await proofreadTranscription(
@@ -153,34 +145,27 @@ export const transcribe = async (
 				[...segmenter.segment(proofreadText.response)].length
 			} characters)`,
 		);
-		results.push(
-			uploadFile(
-				proofreadFilePath,
-				`${sourceBasename}_${language === "en" ? "proofread" : "校正"}`,
-				parentFolderId,
-				"application/vnd.google-apps.document",
-			).then((data) => {
-				consola.success(
-					`Uploaded proofread transcription to ${data.webViewLink}`,
-				);
-				return data;
-			}),
-		);
+		const proofreadFile = uploadFile(
+			proofreadFilePath,
+			`${sourceBasename}_${language === "en" ? "proofread" : "校正"}`,
+			parentFolderId,
+			"application/vnd.google-apps.document",
+		).then((data) => {
+			consola.success(
+				`Uploaded proofread transcription to ${data.webViewLink}`,
+			);
+			return data;
+		});
 
-		const [parentFolder, audioFile, transcriptionFile, proofreadFile] =
-			await Promise.all(results);
-		if (!(transcriptionFile && proofreadFile)) {
-			throw new Error("Failed to upload files.");
-		}
 		consola.success(`Transcribed ${sourceFileId}.`);
 		return {
 			source: sourceFile,
 			// parent is undefined if the source file is not in a folder
-			parent: parentFolder,
+			parent: await parentFolder,
 			// audio is undefined if the source file is an audio file
-			audio: audioFile,
-			transcription: transcriptionFile,
-			proofreadTranscription: proofreadFile,
+			audio: await audioFile,
+			transcription: await transcriptionFile,
+			proofreadTranscription: await proofreadFile,
 		};
 	} finally {
 		await rmdir(tempDir, { recursive: true });
