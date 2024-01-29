@@ -18,41 +18,44 @@ import { downloadFile, getFileMetadata, uploadFile } from "./gdrive";
 export type SupportedLanguages = "en" | "ja";
 
 /**
- * Transcribe a video file.
- * @param videoFileId Google Drive file ID of the video file.
- * @param language Language of the video file.
+ * Transcribe a video or an audio file.
+ * @param sourceFileId Google Drive file ID of the source file.
+ * @param language Language of the source file.
  * @param proofreadModel AI model to use for proofreading.
  * @returns Google Drive file metadata of the uploaded files (audio, transcription, proofread transcription).
  */
 export const transcribe = async (
-	videoFileId: string,
+	sourceFileId: string,
 	language: SupportedLanguages = "en",
 	proofreadModel: Parameters<typeof proofreadTranscription>[2] = "gemini",
 ) => {
-	consola.start(`Transcribing ${videoFileId}...`);
-	const videoFile = await getFileMetadata(videoFileId, [
+	consola.start(`Transcribing ${sourceFileId}...`);
+	const sourceFile = await getFileMetadata(sourceFileId, [
 		"name",
 		"webViewLink",
 		"mimeType",
 		"parents",
 	]);
-	if (!videoFile.mimeType.startsWith("video/")) {
-		throw new Error("Specified file is not a video.");
+	const fileType = sourceFile.mimeType.split("/")[0];
+	if (fileType !== "video" && fileType !== "audio") {
+		throw new Error("Specified file is not a video nor an audio.");
 	}
-	const videoBasename = basename(videoFile.name, extname(videoFile.name));
-	consola.info(`File: ${videoFile.name} (${videoFile.webViewLink})`);
-	const parentFolderId = videoFile.parents[0];
+	const sourceBasename = basename(sourceFile.name, extname(sourceFile.name));
+	consola.info(
+		`File (${fileType}): ${sourceFile.name} (${sourceFile.webViewLink})`,
+	);
+	const parentFolderId = sourceFile.parents[0];
 
 	const tempDir = await mkdtemp(join(tmpdir(), "interview-transcriber-"));
 
 	try {
-		consola.start("Downloading video file...");
-		const videoFilePath = await downloadFile(
-			videoFileId,
+		consola.start("Downloading source file...");
+		const sourceFilePath = await downloadFile(
+			sourceFileId,
 			// use random string to avoid non-ASCII characters in the file name which causes an error in whisper
-			join(tempDir, uniqueString() + extname(videoFile.name)),
+			join(tempDir, uniqueString() + extname(sourceFile.name)),
 		);
-		consola.success(`Downloaded to ${videoFilePath}`);
+		consola.success(`Downloaded to ${sourceFilePath}`);
 
 		const results: ReturnType<typeof uploadFile>[] = [];
 		if (parentFolderId) {
@@ -66,19 +69,24 @@ export const transcribe = async (
 			);
 		}
 
-		consola.start("Extracting audio...");
-		const audioFilePath = await extractAudio(videoFilePath);
-		consola.success(`Extracted audio to ${audioFilePath}`);
-		results.push(
-			uploadFile(
-				audioFilePath,
-				`${videoBasename}_${language === "en" ? "audio" : "音声"}`,
-				parentFolderId,
-			).then((data) => {
-				consola.success(`Uploaded audio to ${data.webViewLink}`);
-				return data;
-			}),
-		);
+		let audioFilePath: string;
+		if (fileType === "audio") {
+			audioFilePath = sourceFilePath;
+		} else {
+			consola.start("Extracting audio...");
+			audioFilePath = await extractAudio(sourceFilePath);
+			consola.success(`Extracted audio to ${audioFilePath}`);
+			results.push(
+				uploadFile(
+					audioFilePath,
+					`${sourceBasename}_${language === "en" ? "audio" : "音声"}`,
+					parentFolderId,
+				).then((data) => {
+					consola.success(`Uploaded audio to ${data.webViewLink}`);
+					return data;
+				}),
+			);
+		}
 
 		consola.start("Removing silence...");
 		const noSilenceAudioFilePath = await removeSilence(audioFilePath);
@@ -104,7 +112,7 @@ export const transcribe = async (
 		const transcribedText = transcriptions.flat().join("\n");
 		const transcriptionFilePath = join(
 			tempDir,
-			`${basename(videoFilePath, extname(videoFilePath))}_transcription.txt`,
+			`${basename(sourceFilePath, extname(sourceFilePath))}_transcription.txt`,
 		);
 		await write(transcriptionFilePath, transcribedText);
 		consola.success(
@@ -115,7 +123,7 @@ export const transcribe = async (
 		results.push(
 			uploadFile(
 				transcriptionFilePath,
-				`${videoBasename}_${
+				`${sourceBasename}_${
 					language === "en" ? "transcription" : "文字起こし"
 				}`,
 				parentFolderId,
@@ -134,7 +142,7 @@ export const transcribe = async (
 		);
 		const proofreadFilePath = join(
 			tempDir,
-			`${basename(videoFilePath, extname(videoFilePath))}_proofread.txt`,
+			`${basename(sourceFilePath, extname(sourceFilePath))}_proofread.txt`,
 		);
 		await write(
 			proofreadFilePath,
@@ -148,7 +156,7 @@ export const transcribe = async (
 		results.push(
 			uploadFile(
 				proofreadFilePath,
-				`${videoBasename}_${language === "en" ? "proofread" : "校正"}`,
+				`${sourceBasename}_${language === "en" ? "proofread" : "校正"}`,
 				parentFolderId,
 				"application/vnd.google-apps.document",
 			).then((data) => {
@@ -161,14 +169,15 @@ export const transcribe = async (
 
 		const [parentFolder, audioFile, transcriptionFile, proofreadFile] =
 			await Promise.all(results);
-		if (!(audioFile && transcriptionFile && proofreadFile)) {
-			// parentFolder is undefined if the video file is not in a folder
+		if (!(transcriptionFile && proofreadFile)) {
 			throw new Error("Failed to upload files.");
 		}
-		consola.success(`Transcribed ${videoFileId}.`);
+		consola.success(`Transcribed ${sourceFileId}.`);
 		return {
-			video: videoFile,
+			source: sourceFile,
+			// parent is undefined if the source file is not in a folder
 			parent: parentFolder,
+			// audio is undefined if the source file is an audio file
 			audio: audioFile,
 			transcription: transcriptionFile,
 			proofreadTranscription: proofreadFile,

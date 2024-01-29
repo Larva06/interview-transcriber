@@ -57,11 +57,13 @@ const commands: ExecutableCommand[] = [
 			)
 			.addStringOption((option) =>
 				option
-					.setName("video_url")
-					.setDescription("The Google Drive URL of the video to transcribe.")
+					.setName("source_url")
+					.setDescription(
+						"The Google Drive URL of the video or the audio to transcribe.",
+					)
 					.setDescriptionLocalization(
 						"ja",
-						"書き起こす動画の Google ドライブ URL",
+						"書き起こす動画・音声の Google ドライブ URL",
 					)
 					.setRequired(true),
 			)
@@ -79,12 +81,12 @@ const commands: ExecutableCommand[] = [
 			)
 			.toJSON(),
 		execute: async (interaction) => {
-			const videoFileId = extractFileId(
-				interaction.options.getString("video_url", true) ?? "",
+			const sourceFileId = extractFileId(
+				interaction.options.getString("source_url", true) ?? "",
 			);
-			if (!videoFileId) {
+			if (!sourceFileId) {
 				await interaction.reply({
-					content: "Invalid video URL.",
+					content: "Invalid file URL.",
 					ephemeral: true,
 				});
 				return;
@@ -102,13 +104,13 @@ const commands: ExecutableCommand[] = [
 
 			interaction.deferReply();
 			try {
-				const { video, parent, audio, transcription, proofreadTranscription } =
-					await transcribe(videoFileId, language, proofreadModel ?? undefined);
+				const { source, parent, audio, transcription, proofreadTranscription } =
+					await transcribe(sourceFileId, language, proofreadModel ?? undefined);
 				await interaction.editReply({
 					embeds: [
 						new EmbedBuilder()
-							.setTitle(video.name)
-							.setURL(video.webViewLink)
+							.setTitle(source.name)
+							.setURL(source.webViewLink)
 							.setFields(
 								[
 									...(parent
@@ -120,11 +122,15 @@ const commands: ExecutableCommand[] = [
 												},
 										  ]
 										: []),
-									{
-										keyEn: "Audio",
-										keyJa: "音声",
-										file: audio,
-									},
+									...(audio
+										? [
+												{
+													keyEn: "Audio",
+													keyJa: "音声",
+													file: audio,
+												},
+										  ]
+										: []),
 									{
 										keyEn: "Transcription",
 										keyJa: "文字起こし",
