@@ -34,7 +34,7 @@
     "@commitlint/types": "18.6.0",
     "@cspell/cspell-types": "8.3.2",
     "@tsconfig/bun": "1.0.1",
-    "@tsconfig/strictest": "2.0.2",
+    "@tsconfig/strictest": "2.0.3",
     "@types/fluent-ffmpeg": "2.1.24",
     "@types/node": "20.11.17",
     "bun-types": "1.0.25",
