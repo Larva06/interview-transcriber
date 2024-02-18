@@ -4,7 +4,6 @@
   "private": true,
   "scripts": {
     "start": "bun src/main.ts",
-    "start:screen": "screen -DRS transcriber bun start",
     "commit": "git-cz",
     "check": "npm-run-all check:*",
     "check:biome": "biome check --apply-unsafe .",

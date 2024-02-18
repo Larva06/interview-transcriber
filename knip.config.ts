@@ -1,9 +1,6 @@
 import type { KnipConfig } from "knip";
 
-const config: KnipConfig = {
-	ignoreBinaries: ["screen"],
-	ignoreDependencies: ["bun-types"],
-};
+const config: KnipConfig = {};
 
 // biome-ignore lint/style/noDefaultExport:
 export default config;
