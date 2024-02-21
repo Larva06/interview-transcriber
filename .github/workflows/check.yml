@@ -33,25 +33,25 @@ jobs:
         id: commitlint-push-initial
         # commit hash will be 0000000000000000000000000000000000000000 if it doesn't exist
         if: github.event_name == 'push' && github.event.before == '0000000000000000000000000000000000000000'
-        run: bun commitlint --verbose --to ${{github.event.after}}
+        run: bun run commitlint --verbose --to ${{github.event.after}}
 
       - name: commitlint (push)
         if: github.event_name == 'push' && steps.commitlint-push-initial.outcome == 'skipped'
-        run: bun commitlint --verbose --from ${{github.event.before}} --to ${{github.event.after}}
+        run: bun run commitlint --verbose --from ${{github.event.before}} --to ${{github.event.after}}
 
       - name: commitlint (pull_request)
         if: github.event_name == 'pull_request'
         run: |
-          bun commitlint --verbose --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }}
+          bun run commitlint --verbose --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }}
 
       - name: Biome
-        run: bun biome ci --error-on-warnings .
+        run: bun run biome ci --error-on-warnings .
 
       - name: cspell
-        run: bun cspell "**/*"
+        run: bun run cspell "**/*"
 
       - name: tsc
-        run: bun tsc
+        run: bun run tsc
 
       - name: knip
-        run: bun knip
+        run: bun run knip
