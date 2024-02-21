@@ -4,7 +4,7 @@ import { env } from "bun";
 import consola from "consola";
 import openAi from "openai";
 import { encoding_for_model } from "tiktoken";
-import { SupportedLanguages } from "./transcribe";
+import type { SupportedLanguages } from "./transcribe";
 
 /**
  * OpenAI API client.
