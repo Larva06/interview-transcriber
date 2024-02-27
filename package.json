@@ -17,7 +17,7 @@
     "@google/generative-ai": "0.2.1",
     "@googleapis/drive": "8.7.0",
     "consola": "3.2.3",
-    "csv-parse": "5.5.3",
+    "csv-parse": "5.5.4",
     "discord.js": "14.14.1",
     "fluent-ffmpeg": "2.1.2",
     "mime": "4.0.1",
