@@ -36,7 +36,7 @@
     "@tsconfig/strictest": "2.0.3",
     "@types/bun": "1.0.8",
     "@types/fluent-ffmpeg": "2.1.24",
-    "@types/node": "20.11.20",
+    "@types/node": "20.11.21",
     "commitizen": "4.3.0",
     "cspell": "8.4.1",
     "husky": "9.0.11",
