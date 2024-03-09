@@ -15,6 +15,7 @@
 		"rules": {
 			"all": true,
 			"nursery": {
+				// Bun basically supports Node.js modules
 				"noNodejsModules": "off"
 			}
 		}
