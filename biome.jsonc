@@ -15,7 +15,14 @@
 		"rules": {
 			"all": true,
 			"nursery": {
-				"noNodejsModules": "off"
+				"all": true,
+				// Bun basically supports Node.js modules
+				"noNodejsModules": "off",
+				// This is a server-side application
+				"noConsole": "off",
+				// This rule reports bun as an undeclared dependency
+				// ref: https://github.com/biomejs/biome/issues/2074
+				"noUndeclaredDependencies": "off"
 			}
 		}
 	},
