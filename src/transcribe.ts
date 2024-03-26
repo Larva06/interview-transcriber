@@ -63,7 +63,7 @@ export const transcribe = async (
 						consola.info(`Parent folder: ${data.name} (${data.webViewLink})`);
 						return data;
 					},
-			  )
+				)
 			: undefined;
 
 		let audioFilePath: string;

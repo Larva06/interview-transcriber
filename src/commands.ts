@@ -95,8 +95,8 @@ const commands: ExecutableCommand[] = [
 			const language = interaction.guildLocale?.startsWith("en")
 				? "en"
 				: interaction.guildLocale?.startsWith("ja")
-				  ? "ja"
-				  : undefined;
+					? "ja"
+					: undefined;
 
 			const proofreadModel = interaction.options.getString("proofread_model") as
 				| keyof typeof models
@@ -120,7 +120,7 @@ const commands: ExecutableCommand[] = [
 													keyJa: "フォルダー",
 													file: parent,
 												},
-										  ]
+											]
 										: []),
 									...(audio
 										? [
@@ -129,7 +129,7 @@ const commands: ExecutableCommand[] = [
 													keyJa: "音声",
 													file: audio,
 												},
-										  ]
+											]
 										: []),
 									{
 										keyEn: "Transcription",
