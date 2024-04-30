@@ -67,7 +67,7 @@ export const transcribe = async (
 			: undefined;
 
 		let audioFilePath: string;
-		let audioFile: ReturnType<typeof uploadFile> | undefined = undefined;
+		let audioFile: ReturnType<typeof uploadFile> | undefined;
 		if (fileType === "audio") {
 			audioFilePath = sourceFilePath;
 		} else {
