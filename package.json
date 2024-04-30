@@ -44,5 +44,6 @@
 		"knip": "5.11.0",
 		"npm-run-all2": "6.1.2",
 		"typescript": "5.4.5"
-	}
+	},
+	"trustedDependencies": ["@biomejs/biome"]
 }
