@@ -15,7 +15,7 @@
 	},
 	"dependencies": {
 		"@google/generative-ai": "0.10.0",
-		"@googleapis/drive": "8.7.1",
+		"@googleapis/drive": "8.8.0",
 		"consola": "3.2.3",
 		"csv-parse": "5.5.5",
 		"discord.js": "14.14.1",
