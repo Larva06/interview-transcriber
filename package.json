@@ -18,7 +18,7 @@
 		"@googleapis/drive": "8.8.0",
 		"consola": "3.2.3",
 		"csv-parse": "5.5.5",
-		"discord.js": "14.14.1",
+		"discord.js": "14.15.2",
 		"fluent-ffmpeg": "2.1.2",
 		"mime": "4.0.3",
 		"openai": "4.40.2",
