@@ -20,7 +20,7 @@ const requiredEnvs = [
 	"GEMINI_API_KEY",
 ];
 const missingEnv = requiredEnvs.filter((name) => !env[name]);
-if (missingEnv.length) {
+if (missingEnv.length > 0) {
 	consola.error(
 		`Environment variables ${missingEnv.join(
 			", ",
@@ -58,8 +58,8 @@ const files = await driveClient.files.list({
 // only legacy files have multiple owners, so we do not support them
 // ref: https://developers.google.com/drive/api/reference/rest/v3/files#File.FIELDS.owners
 if (
-	!files.data.files?.filter(({ owners }) => owners?.[0] && !owners?.[0]?.me)
-		.length
+	files.data.files?.filter(({ owners }) => owners?.[0] && !owners?.[0]?.me)
+		.length === 0
 ) {
 	consola.warn(
 		"No files are shared to the service account in Google Drive. Share some files to the service account.",
