@@ -21,7 +21,7 @@
 		"discord.js": "14.15.2",
 		"fluent-ffmpeg": "2.1.2",
 		"mime": "4.0.3",
-		"openai": "4.43.0",
+		"openai": "4.44.0",
 		"tiktoken": "1.0.14",
 		"unique-string": "3.0.0"
 	},
