@@ -22,7 +22,7 @@
 		"fluent-ffmpeg": "2.1.2",
 		"mime": "4.0.3",
 		"openai": "4.46.1",
-		"tiktoken": "1.0.14",
+		"tiktoken": "1.0.15",
 		"unique-string": "3.0.0"
 	},
 	"devDependencies": {
