@@ -23,11 +23,6 @@ declare module "bun" {
 		readonly GOOGLE_SERVICE_ACCOUNT_KEY: string;
 
 		/**
-		 * API key of the OpenAI API.
-		 */
-		readonly OPENAI_API_KEY: string;
-
-		/**
 		 * API key of the Gemini API.
 		 */
 		readonly GEMINI_API_KEY: string;

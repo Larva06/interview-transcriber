@@ -5,7 +5,6 @@ import {
 	type ChatInputCommandInteraction,
 	type Client,
 	DiscordAPIError,
-	EmbedBuilder,
 	type Interaction,
 	type MessageContextMenuCommandInteraction,
 	OAuth2Scopes,
@@ -14,14 +13,11 @@ import {
 	type RESTPostAPIContextMenuApplicationCommandsJSONBody,
 	type RESTPutAPIApplicationGuildCommandsJSONBody,
 	Routes,
-	SlashCommandBuilder,
 	type UserContextMenuCommandInteraction,
 } from "discord.js";
-import { models } from "./ai";
-import { extractFileId } from "./gdrive";
-import { transcribe } from "./transcribe";
+import { createTranscribeCommand } from "./transcribe";
 
-type ExecutableCommand =
+export type ExecutableCommand =
 	| {
 			type: ApplicationCommandType.ChatInput;
 			data: RESTPostAPIChatInputApplicationCommandsJSONBody;
@@ -45,129 +41,7 @@ type ExecutableCommand =
 /**
  * Application commands registered to the bot.
  */
-const commands: ExecutableCommand[] = [
-	{
-		type: ApplicationCommandType.ChatInput,
-		data: new SlashCommandBuilder()
-			.setName("transcribe")
-			.setDescription("Transcribe an interview from a Google Drive file.")
-			.setDescriptionLocalization(
-				"ja",
-				"Google ドライブのファイルからインタビューを書き起こします",
-			)
-			.addStringOption((option) =>
-				option
-					.setName("source_url")
-					.setDescription(
-						"The Google Drive URL of the video or the audio to transcribe.",
-					)
-					.setDescriptionLocalization(
-						"ja",
-						"書き起こす動画・音声の Google ドライブ URL",
-					)
-					.setRequired(true),
-			)
-			.addStringOption((option) =>
-				option
-					.setName("proofread_model")
-					.setDescription("The AI model to use for proofreading.")
-					.setDescriptionLocalization("ja", "校正に使用する AI モデル")
-					.setChoices(
-						...Object.entries(models).map(([key, { name }]) => ({
-							name: name,
-							value: key,
-						})),
-					),
-			)
-			.toJSON(),
-		execute: async (interaction) => {
-			const sourceFileId = extractFileId(
-				interaction.options.getString("source_url", true) ?? "",
-			);
-			if (!sourceFileId) {
-				await interaction.reply({
-					content: "Invalid file URL.",
-					ephemeral: true,
-				});
-				return;
-			}
-
-			const language = interaction.guildLocale?.startsWith("en")
-				? "en"
-				: interaction.guildLocale?.startsWith("ja")
-					? "ja"
-					: undefined;
-
-			const proofreadModel = interaction.options.getString("proofread_model") as
-				| keyof typeof models
-				| undefined;
-
-			interaction.deferReply();
-			try {
-				const { source, parent, audio, transcription, proofreadTranscription } =
-					await transcribe(sourceFileId, language, proofreadModel ?? undefined);
-				await interaction.editReply({
-					embeds: [
-						new EmbedBuilder()
-							.setTitle(source.name)
-							.setURL(source.webViewLink)
-							.setFields(
-								[
-									...(parent
-										? [
-												{
-													keyEn: "Folder",
-													keyJa: "フォルダー",
-													file: parent,
-												},
-											]
-										: []),
-									...(audio
-										? [
-												{
-													keyEn: "Audio",
-													keyJa: "音声",
-													file: audio,
-												},
-											]
-										: []),
-									{
-										keyEn: "Transcription",
-										keyJa: "文字起こし",
-										file: transcription,
-									},
-									{
-										keyEn: "Proofread",
-										keyJa: "校正",
-										file: proofreadTranscription,
-									},
-								].map(({ keyEn, keyJa, file: { name, webViewLink } }) => ({
-									name: language === "en" ? keyEn : keyJa,
-									value: `[${name}](${webViewLink})`,
-									inline: true,
-								})),
-							)
-							.setColor("Green")
-							.toJSON(),
-					],
-				});
-			} catch (error) {
-				const message =
-					error instanceof Error ? error.message : JSON.stringify(error);
-				await interaction.editReply({
-					embeds: [
-						new EmbedBuilder()
-							.setTitle("Error")
-							.setDescription(message)
-							.setColor("Red")
-							.toJSON(),
-					],
-				});
-				console.error(error);
-			}
-		},
-	},
-];
+const commands: ExecutableCommand[] = [createTranscribeCommand()];
 
 /**
  * Register application commands of the bot to Discord.

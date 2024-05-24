@@ -3,31 +3,31 @@ import { tmpdir } from "node:os";
 import { basename, extname, join } from "node:path";
 import { write } from "bun";
 import consola from "consola";
-import uniqueString from "unique-string";
 import {
-	proofreadTranscription,
-	transcribeAudioFile,
-	whisperMaxFileSize,
-} from "./ai";
+	ApplicationCommandType,
+	EmbedBuilder,
+	SlashCommandBuilder,
+} from "discord.js";
+import uniqueString from "unique-string";
+import type { ExecutableCommand } from "./commands";
 import { extractAudio, removeSilence, splitAudio } from "./ffmpeg";
-import { downloadFile, getFileMetadata, uploadFile } from "./gdrive";
-
-/**
- * Supported languages.
- */
-export type SupportedLanguages = "en" | "ja";
+import {
+	downloadFile,
+	extractFileId,
+	getFileMetadata,
+	uploadFile,
+} from "./gdrive";
+import { genders, maxAudioFileDuration, transcribeAudioFile } from "./gemini";
 
 /**
  * Transcribe a video or an audio file.
  * @param sourceFileId Google Drive file ID of the source file.
- * @param language Language of the source file.
- * @param proofreadModel AI model to use for proofreading.
+ * @param speakers Array of speakers with their names and genders
  * @returns Google Drive file metadata of the uploaded files (audio, transcription, proofread transcription).
  */
-export const transcribe = async (
+const transcribe = async (
 	sourceFileId: string,
-	language: SupportedLanguages = "en",
-	proofreadModel: Parameters<typeof proofreadTranscription>[2] = "gemini",
+	speakers: Parameters<typeof transcribeAudioFile>[1],
 ) => {
 	consola.start(`Transcribing ${sourceFileId}...`);
 	const sourceFile = await getFileMetadata(sourceFileId, [
@@ -76,7 +76,7 @@ export const transcribe = async (
 			consola.success(`Extracted audio to ${audioFilePath}`);
 			audioFile = uploadFile(
 				audioFilePath,
-				`${sourceBasename}_${language === "en" ? "audio" : "音声"}`,
+				`${sourceBasename}_"audio"`,
 				parentFolderId,
 			).then((data) => {
 				consola.success(`Uploaded audio to ${data.webViewLink}`);
@@ -91,7 +91,7 @@ export const transcribe = async (
 		consola.start("Splitting audio...");
 		const audioSegments = await splitAudio(
 			noSilenceAudioFilePath,
-			whisperMaxFileSize * 0.95,
+			maxAudioFileDuration,
 		);
 		consola.success(
 			`Split audio into ${audioSegments.length} files (total ${
@@ -99,13 +99,11 @@ export const transcribe = async (
 			} seconds)`,
 		);
 
-		const segmenter = new Intl.Segmenter(language);
-
 		consola.start("Transcribing audio...");
 		const transcriptions = await Promise.all(
-			audioSegments.map(({ path }) => transcribeAudioFile(path, language)),
+			audioSegments.map(({ path }) => transcribeAudioFile(path, speakers)),
 		);
-		const transcribedText = transcriptions.flat().join("\n");
+		const transcribedText = transcriptions.join("\n");
 		const transcriptionFilePath = join(
 			tempDir,
 			`${basename(sourceFilePath, extname(sourceFilePath))}_transcription.txt`,
@@ -113,47 +111,20 @@ export const transcribe = async (
 		await write(transcriptionFilePath, transcribedText);
 		consola.success(
 			`Transcribed audio to ${transcriptionFilePath} (${
-				[...segmenter.segment(transcribedText)].length
+				[
+					...new Intl.Segmenter("ja", { granularity: "grapheme" }).segment(
+						transcribedText,
+					),
+				].length
 			} characters)`,
 		);
 		const transcriptionFile = uploadFile(
 			transcriptionFilePath,
-			`${sourceBasename}_${language === "en" ? "transcription" : "文字起こし"}`,
+			`${sourceBasename}_transcription`,
 			parentFolderId,
 			"application/vnd.google-apps.document",
 		).then((data) => {
 			consola.success(`Uploaded transcription to ${data.webViewLink}`);
-			return data;
-		});
-
-		consola.start("Proofreading transcription...");
-		const proofreadText = await proofreadTranscription(
-			transcribedText,
-			language,
-			proofreadModel,
-		);
-		const proofreadFilePath = join(
-			tempDir,
-			`${basename(sourceFilePath, extname(sourceFilePath))}_proofread.txt`,
-		);
-		await write(
-			proofreadFilePath,
-			`model: ${proofreadText.model}\nprompt:\n${proofreadText.prompt}\n\n---\n\n${proofreadText.response}`,
-		);
-		consola.success(
-			`Proofread transcription to ${proofreadFilePath} (${
-				[...segmenter.segment(proofreadText.response)].length
-			} characters)`,
-		);
-		const proofreadFile = uploadFile(
-			proofreadFilePath,
-			`${sourceBasename}_${language === "en" ? "proofread" : "校正"}`,
-			parentFolderId,
-			"application/vnd.google-apps.document",
-		).then((data) => {
-			consola.success(
-				`Uploaded proofread transcription to ${data.webViewLink}`,
-			);
 			return data;
 		});
 
@@ -165,9 +136,153 @@ export const transcribe = async (
 			// audio is undefined if the source file is an audio file
 			audio: await audioFile,
 			transcription: await transcriptionFile,
-			proofreadTranscription: await proofreadFile,
 		};
 	} finally {
 		await rmdir(tempDir, { recursive: true });
 	}
+};
+
+/**
+ * Create an executable slash command to transcribe an interview from a video or an audio file.
+ * @returns Executable slash command
+ */
+export const createTranscribeCommand = (): ExecutableCommand => {
+	const speakersOptions = [
+		{
+			name: "interviewee",
+			description: "インタビュイー",
+			required: true,
+		},
+		...Array.from({ length: 2 }, (_, i) => ({
+			name: `interviewer_${i + 1}`,
+			description: `インタビュアー${i + 1}`,
+			// at least one interviewer is required
+			required: i === 0,
+		})),
+	];
+
+	const builder = new SlashCommandBuilder()
+		.setName("transcribe")
+		.setDescription("Google ドライブのファイルからインタビューを書き起こします")
+		.addStringOption((option) =>
+			option
+				.setName("source_url")
+				.setDescription("書き起こす動画・音声のGoogleドライブURL")
+				.setRequired(true),
+		);
+
+	for (const { name, description, required } of speakersOptions) {
+		builder.addStringOption((option) =>
+			option
+				.setName(`${name}_name`)
+				.setDescription(`${description}の名前`)
+				.setRequired(required),
+		);
+		builder.addStringOption((option) =>
+			option
+				.setName(`${name}_gender`)
+				.setDescription(`${description}の性別`)
+				.setRequired(required)
+				.setChoices(
+					genders.map((gender) => ({
+						name: `${gender}性`,
+						value: gender,
+					})),
+				),
+		);
+	}
+
+	return {
+		type: ApplicationCommandType.ChatInput,
+		data: builder.toJSON(),
+		// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: giving up
+		execute: async (interaction) => {
+			const sourceFileId = extractFileId(
+				interaction.options.getString("source_url", true) ?? "",
+			);
+			if (!sourceFileId) {
+				await interaction.reply({
+					content: "Invalid file URL.",
+					ephemeral: true,
+				});
+				return;
+			}
+
+			const speakers = speakersOptions
+				.map(({ name, required }) => ({
+					role: name,
+					name: interaction.options.getString(`${name}_name`, required),
+					gender: interaction.options.getString(`${name}_gender`, required) as
+						| (typeof genders)[number]
+						| null,
+				}))
+				.filter(
+					(
+						speaker,
+					): speaker is {
+						role: string;
+						name: NonNullable<(typeof speaker)["name"]>;
+						gender: NonNullable<(typeof speaker)["gender"]>;
+					} => !!speaker.name && !!speaker.gender,
+				);
+
+			interaction.deferReply();
+			try {
+				const { source, parent, audio, transcription } = await transcribe(
+					sourceFileId,
+					speakers,
+				);
+				await interaction.editReply({
+					embeds: [
+						new EmbedBuilder()
+							.setTitle(parent?.name ?? source.name)
+							.setURL(parent?.webViewLink ?? source.webViewLink)
+							.setFields(
+								[
+									...(parent
+										? [
+												{
+													key: audio ? "動画" : "音声",
+													file: source,
+												},
+											]
+										: []),
+									...(audio
+										? [
+												{
+													key: "音声",
+													file: audio,
+												},
+											]
+										: []),
+									{
+										key: "文字起こし",
+										file: transcription,
+									},
+								].map(({ key, file: { name, webViewLink } }) => ({
+									name: key,
+									value: `[${name}](${webViewLink})`,
+									inline: true,
+								})),
+							)
+							.setColor("Green")
+							.toJSON(),
+					],
+				});
+			} catch (error) {
+				const message =
+					error instanceof Error ? error.message : JSON.stringify(error);
+				await interaction.editReply({
+					embeds: [
+						new EmbedBuilder()
+							.setTitle("Error")
+							.setDescription(message)
+							.setColor("Red")
+							.toJSON(),
+					],
+				});
+				console.error(error);
+			}
+		},
+	};
 };
