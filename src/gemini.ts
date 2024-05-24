@@ -79,10 +79,14 @@ ${speakers
 				responseMimeType: "text/plain",
 			},
 			// disable all safety settings
-			safetySettings: Object.values(HarmCategory).map((category) => ({
-				category,
-				threshold: HarmBlockThreshold.BLOCK_NONE,
-			})),
+			safetySettings: Object.values(HarmCategory)
+				.filter(
+					(category) => category !== HarmCategory.HARM_CATEGORY_UNSPECIFIED,
+				)
+				.map((category) => ({
+					category,
+					threshold: HarmBlockThreshold.BLOCK_NONE,
+				})),
 		});
 
 	return result.response.text();
