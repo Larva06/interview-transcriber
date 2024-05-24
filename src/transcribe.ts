@@ -76,7 +76,7 @@ const transcribe = async (
 			consola.success(`Extracted audio to ${audioFilePath}`);
 			audioFile = uploadFile(
 				audioFilePath,
-				`${sourceBasename}_"audio"`,
+				`${sourceBasename}_audio`,
 				parentFolderId,
 			).then((data) => {
 				consola.success(`Uploaded audio to ${data.webViewLink}`);
