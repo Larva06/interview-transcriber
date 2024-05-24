@@ -53,12 +53,12 @@ export const removeSilence = async (sourcePath: string) => {
 /**
  * Split an audio file into multiple files with a maximum size.
  * @param sourcePath Path to the audio file
- * @param maxFileSize Maximum size of each file
+ * @param maxDuration Maximum duration of each audio segment in seconds
  * @returns Array of audio segments, each of which has a path to the audio file, start time, and end time
  */
 export const splitAudio = async (
 	sourcePath: string,
-	maxFileSize: number,
+	maxDuration: number,
 ): Promise<
 	{
 		path: string;
@@ -67,12 +67,12 @@ export const splitAudio = async (
 	}[]
 > =>
 	promisify<string, Ffmpeg.FfprobeData>(Ffmpeg.ffprobe)(sourcePath).then(
-		({ format: { duration, size } }) => {
-			if (!(duration && size)) {
+		({ format: { duration } }) => {
+			if (!duration) {
 				throw new Error("Failed to get file metadata from ffprobe.");
 			}
 
-			if (size <= maxFileSize) {
+			if (duration <= maxDuration) {
 				return [
 					{
 						path: sourcePath,
@@ -91,7 +91,7 @@ export const splitAudio = async (
 				Ffmpeg(sourcePath)
 					.outputOptions([
 						"-f segment",
-						`-segment_time ${Math.floor((duration * maxFileSize) / size)}`,
+						`-segment_time ${maxDuration}`,
 						`-segment_list ${listFilePath}`,
 					])
 					.saveToFile(audioFilePath)

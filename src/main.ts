@@ -3,9 +3,9 @@ import { env } from "bun";
 import { consola } from "consola";
 import { Client, Events } from "discord.js";
 import Ffmpeg from "fluent-ffmpeg";
-import { geminiClient, openaiClient } from "./ai";
 import { commandsListener, registerCommands } from "./commands";
 import { driveClient } from "./gdrive";
+import { geminiClient } from "./gemini";
 
 consola.start("interview-transcriber is starting...");
 
@@ -34,10 +34,6 @@ if (missingEnv.length > 0) {
 consola.start("Checking ffmpeg installation...");
 await promisify(Ffmpeg.getAvailableFormats)();
 consola.ready("ffmpeg is installed!");
-
-consola.start("Initializing OpenAI API client...");
-await openaiClient.models.list();
-consola.ready("OpenAI API client is now ready!");
 
 consola.start("Initializing Gemini API client...");
 const result = await geminiClient
