@@ -14,10 +14,12 @@
 	"linter": {
 		"rules": {
 			"all": true,
+			"correctness": {
+				// Bun basically supports Node.js modules
+				"noNodejsModules": "off"
+			},
 			"nursery": {
 				"all": true,
-				// Bun basically supports Node.js modules
-				"noNodejsModules": "off",
 				// This is a server-side application
 				"noConsole": "off",
 				// This rule reports bun as an undeclared dependency

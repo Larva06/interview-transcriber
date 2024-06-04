@@ -6,7 +6,7 @@
 		"start": "bun src/main.ts",
 		"commit": "git-cz",
 		"check": "npm-run-all check:*",
-		"check:biome": "biome check --apply .",
+		"check:biome": "biome check --fix",
 		"check:ts": "tsc --incremental",
 		"check:spell": "cspell --cache \"**/*\"",
 		"check:knip": "knip",

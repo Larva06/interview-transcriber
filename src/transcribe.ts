@@ -9,15 +9,19 @@ import {
 	SlashCommandBuilder,
 } from "discord.js";
 import uniqueString from "unique-string";
-import type { ExecutableCommand } from "./commands";
-import { extractAudio, removeSilence, splitAudio } from "./ffmpeg";
+import type { ExecutableCommand } from "./commands.ts";
+import { extractAudio, removeSilence, splitAudio } from "./ffmpeg.ts";
 import {
 	downloadFile,
 	extractFileId,
 	getFileMetadata,
 	uploadFile,
-} from "./gdrive";
-import { genders, maxAudioFileDuration, transcribeAudioFile } from "./gemini";
+} from "./gdrive.ts";
+import {
+	genders,
+	maxAudioFileDuration,
+	transcribeAudioFile,
+} from "./gemini.ts";
 
 /**
  * Transcribe a video or an audio file.
