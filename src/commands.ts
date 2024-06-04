@@ -15,7 +15,7 @@ import {
 	Routes,
 	type UserContextMenuCommandInteraction,
 } from "discord.js";
-import { createTranscribeCommand } from "./transcribe";
+import { createTranscribeCommand } from "./transcribe.ts";
 
 export type ExecutableCommand =
 	| {

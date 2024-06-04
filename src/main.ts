@@ -3,9 +3,9 @@ import { env } from "bun";
 import { consola } from "consola";
 import { Client, Events } from "discord.js";
 import Ffmpeg from "fluent-ffmpeg";
-import { commandsListener, registerCommands } from "./commands";
-import { driveClient } from "./gdrive";
-import { geminiClient } from "./gemini";
+import { commandsListener, registerCommands } from "./commands.ts";
+import { driveClient } from "./gdrive.ts";
+import { geminiClient } from "./gemini.ts";
 
 consola.start("interview-transcriber is starting...");
 
