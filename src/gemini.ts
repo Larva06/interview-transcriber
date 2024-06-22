@@ -3,7 +3,7 @@ import {
 	HarmBlockThreshold,
 	HarmCategory,
 } from "@google/generative-ai";
-import { GoogleAIFileManager } from "@google/generative-ai/files";
+import { GoogleAIFileManager } from "@google/generative-ai/server";
 import { env } from "bun";
 import mime from "mime";
 
