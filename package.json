@@ -39,7 +39,7 @@
 		"cspell": "8.10.4",
 		"husky": "9.0.11",
 		"ignore-sync": "7.0.1",
-		"knip": "5.24.4",
+		"knip": "5.25.1",
 		"npm-run-all2": "6.2.2",
 		"typescript": "5.4.5"
 	},
