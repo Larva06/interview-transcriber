@@ -37,7 +37,7 @@
 		"@types/node": "20.14.11",
 		"commitizen": "4.3.0",
 		"cspell": "8.11.0",
-		"husky": "9.1.0",
+		"husky": "9.1.1",
 		"ignore-sync": "7.0.1",
 		"knip": "5.26.0",
 		"npm-run-all2": "6.2.2",
