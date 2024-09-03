@@ -41,7 +41,7 @@
 		"ignore-sync": "7.0.1",
 		"knip": "5.29.1",
 		"npm-run-all2": "6.2.2",
-		"typescript": "5.4.5"
+		"typescript": "5.5.4"
 	},
 	"trustedDependencies": ["@biomejs/biome"]
 }
