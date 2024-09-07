@@ -16,7 +16,7 @@ jobs:
     steps:
       - name: actions-timeline
         # cspell:ignore kesin
-        uses: Kesin11/actions-timeline@da70beff098ff89b15d279e8bf2f60519a8dadd7 # v2.2.0
+        uses: Kesin11/actions-timeline@3046833d9aacfd7745c5264b7f3af851c3e2a619 # v2.2.1
 
       - name: Checkout
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
