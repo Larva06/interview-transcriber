@@ -32,7 +32,7 @@
 		"@cspell/cspell-types": "8.14.2",
 		"@tsconfig/bun": "1.0.7",
 		"@tsconfig/strictest": "2.0.5",
-		"@types/bun": "1.1.8",
+		"@types/bun": "1.1.9",
 		"@types/fluent-ffmpeg": "2.1.26",
 		"@types/node": "22.5.4",
 		"commitizen": "4.3.0",
