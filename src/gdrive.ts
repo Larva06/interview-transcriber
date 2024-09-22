@@ -36,7 +36,7 @@ export const extractFileId = (url: string): string | undefined => {
 	// ref: https://github.com/spamscanner/url-regex-safe/blob/6c1e2c3b5557709633a2cc971d599469ea395061/src/index.js#L80
 	// ref: https://stackoverflow.com/questions/16840038/easiest-way-to-get-file-id-from-url-on-google-apps-script
 	const regex =
-		/^https?:\/\/(?:drive|docs)\.google\.com\/[^\s'"\)]+\/(?:d|e|folders)\/([-\w]{25,})(?:\/[^\s'"\)]*[^\s"\)'.?!])?$/g;
+		/^https?:\/\/(?:drive|docs)\.google\.com\/[^\s'")]+\/(?:d|e|folders)\/([-\w]{25,})(?:\/[^\s'")]*[^\s")'.?!])?$/g;
 	return regex.exec(url)?.[1];
 };
 
