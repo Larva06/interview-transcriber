@@ -1,3 +1,5 @@
+"use strict";
+
 /**
  * @type {import("@cspell/cspell-types").CSpellUserSettings}
  */
