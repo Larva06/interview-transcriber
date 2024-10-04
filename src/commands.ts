@@ -47,7 +47,7 @@ const commands: ExecutableCommand[] = [createTranscribeCommand()];
  * Register application commands of the bot to Discord.
  * @param client client used to register commands
  */
-export const registerCommands = async (client: Client<true>) => {
+export const registerCommands = async (client: Client<true>): Promise<void> => {
 	consola.start("Registering application commands...");
 	try {
 		const body: RESTPutAPIApplicationGuildCommandsJSONBody = commands.map(
@@ -102,8 +102,10 @@ export const registerCommands = async (client: Client<true>) => {
 /**
  * Listener for application command interactions.
  */
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: if-else statements are necessary here
-export const commandsListener = async (interaction: Interaction) => {
+export const commandsListener = async (
+	interaction: Interaction,
+): // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: if-else statements are necessary here
+Promise<void> => {
 	if (!interaction.isCommand()) {
 		return;
 	}

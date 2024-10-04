@@ -10,7 +10,7 @@ import Ffmpeg from "fluent-ffmpeg";
  * @param videoFilePath Path to the video file
  * @returns Path to the extracted audio file
  */
-export const extractAudio = async (videoFilePath: string) => {
+export const extractAudio = async (videoFilePath: string): Promise<string> => {
 	const audioFilePath = join(
 		dirname(videoFilePath),
 		`${basename(videoFilePath, extname(videoFilePath))}.mp3`,
@@ -30,7 +30,7 @@ export const extractAudio = async (videoFilePath: string) => {
  * @param sourcePath Path to the audio file
  * @returns Path to the audio file without silence
  */
-export const removeSilence = async (sourcePath: string) => {
+export const removeSilence = async (sourcePath: string): Promise<string> => {
 	const outputFilePath = join(
 		dirname(sourcePath),
 		`${basename(sourcePath, extname(sourcePath))}_no_silence${extname(
