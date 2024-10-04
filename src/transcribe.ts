@@ -32,7 +32,20 @@ import {
 const transcribe = async (
 	sourceFileId: string,
 	speakers: Parameters<typeof transcribeAudioFile>[1],
-) => {
+): Promise<{
+	source: Awaited<
+		ReturnType<
+			typeof getFileMetadata<
+				("mimeType" | "name" | "parents" | "webViewLink")[]
+			>
+		>
+	>;
+	parent:
+		| Awaited<ReturnType<typeof getFileMetadata<("name" | "webViewLink")[]>>>
+		| undefined;
+	audio: Awaited<ReturnType<typeof uploadFile>> | undefined;
+	transcription: Awaited<ReturnType<typeof uploadFile>>;
+}> => {
 	consola.start(`Transcribing ${sourceFileId}...`);
 	const sourceFile = await getFileMetadata(sourceFileId, [
 		"name",
@@ -200,7 +213,7 @@ export const createTranscribeCommand = (): ExecutableCommand => {
 		type: ApplicationCommandType.ChatInput,
 		data: builder.toJSON(),
 		// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: giving up
-		execute: async (interaction) => {
+		execute: async (interaction): Promise<void> => {
 			const sourceFileId = extractFileId(
 				interaction.options.getString("source_url", true) ?? "",
 			);

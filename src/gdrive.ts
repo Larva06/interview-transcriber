@@ -59,7 +59,11 @@ export const getFileMetadata = async <
 >(
 	fileId: string,
 	fields?: F,
-) =>
+): Promise<
+	F extends (keyof drive_v3.Schema$File)[]
+		? FileMetadata<F[number]>
+		: drive_v3.Schema$File
+> =>
 	driveClient.files
 		.get({
 			fileId: fileId,
@@ -82,7 +86,10 @@ export const getFileMetadata = async <
  * @param path path to save the file
  * @returns path to the downloaded file
  */
-export const downloadFile = async (fileId: string, path: string) =>
+export const downloadFile = async (
+	fileId: string,
+	path: string,
+): Promise<string> =>
 	driveClient.files
 		.get(
 			{
@@ -121,7 +128,7 @@ export const uploadFile = async (
 		| "document"
 		| "spreadsheet"
 		| "presentation"}`,
-) =>
+): Promise<FileMetadata<"name" | "webViewLink">> =>
 	driveClient.files
 		.create({
 			fields: "name,webViewLink",
