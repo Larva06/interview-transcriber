@@ -14,7 +14,7 @@
 		"prepare": "husky"
 	},
 	"dependencies": {
-		"@google/generative-ai": "0.21.0",
+		"@google/generative-ai": "0.22.0",
 		"@googleapis/drive": "8.14.0",
 		"consola": "3.4.0",
 		"csv-parse": "5.6.0",
