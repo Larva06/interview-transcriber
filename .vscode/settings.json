@@ -28,5 +28,5 @@
 	// disable to use type definitions in node_modules
 	"typescript.disableAutomaticTypeAcquisition": true,
 
-	"editor.defaultColorDecorators": true
+	"editor.defaultColorDecorators": "auto"
 }

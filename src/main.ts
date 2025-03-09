@@ -38,7 +38,7 @@ consola.ready("ffmpeg is installed!");
 consola.start("Initializing Gemini API client...");
 const result = await geminiClient
 	.getGenerativeModel({
-		model: "gemini-pro",
+		model: "gemini-1.5-pro-latest",
 	})
 	.generateContent("Ping! Say something to me!");
 consola.info(`Gemini: ${result.response.text()}`);
