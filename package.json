@@ -40,7 +40,7 @@
 		"husky": "9.1.7",
 		"ignore-sync": "8.0.0",
 		"knip": "5.56.0",
-		"npm-run-all2": "8.0.2",
+		"npm-run-all2": "8.0.3",
 		"typescript": "5.8.3"
 	},
 	"trustedDependencies": ["@biomejs/biome"]
